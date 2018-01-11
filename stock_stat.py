@@ -7,6 +7,9 @@ import re
 import time
 import mysql_util
 
+# 股票列表
+STOCK_LIST = []
+
 
 # 获取HTML页面内容
 def get_html_text(url):
@@ -16,28 +19,28 @@ def get_html_text(url):
         r.encoding = r.apparent_encoding
         return r.text
     except Exception as e:
-        print("\r\n获取HTML页面内容Err.", e)
+        print("\n获取HTML页面内容Err.", e)
         return ""
 
 
 # 获取股票列表
-def get_stock_list(stock_list, stock_list_url):
+def get_stock_list(stock_list_url):
     html = get_html_text(stock_list_url)
-    soup = BeautifulSoup(html, 'html.parser')
-    a = soup.find_all('a')
-    for i in a:
+    html_soup = BeautifulSoup(html, 'html.parser')
+    all_a = html_soup.find('div', attrs={'class': 'quotebody'}).find_all('li > a')
+    for a in all_a:
         try:
-            href = i.attrs['href']
-            stock_list.append(re.findall(r"[s][hz][630][0][012]\d{3}", href)[0])
+            href = a.attrs['href']
+            STOCK_LIST.append(re.findall(r"[s][hz][630][0][012]\d{3}", href)[0])
         except Exception as e:
-            print("\r\n获取股票列表Err.", e)
+            print("\n获取股票列表Err.", e)
             continue
 
 
 # 获取股票信息并存入本地文件
-def get_stock_info_to_file(stock_list, stock_info_url, output_file):
+def get_stock_info_to_file(stock_info_url, output_file):
     count = 0
-    for stock in stock_list:
+    for stock in STOCK_LIST:
         count = count + 1
         url = stock_info_url + stock + ".html"
         html = get_html_text(url)
@@ -62,18 +65,18 @@ def get_stock_info_to_file(stock_list, stock_info_url, output_file):
 
             with open(output_file, 'a', encoding='utf-8') as f:
                 f.write(str(stock_dict) + '\n\n')
-                print("\r\n当前进度: {:.2f}%".format(count * 100 / len(stock_list)), end="")
+                print("\n当前进度: {:.2f}%".format(count * 100 / len(STOCK_LIST)), end="")
         except Exception as e:
-            print("\r\n获取股票信息{%s}Err." % stock, e)
+            print("\n获取股票信息{%s}Err." % stock, e)
             continue
 
 
 # 获取股票信息并存入数据库
-def get_stock_info_to_db(stock_list, stock_info_url):
+def get_stock_info_to_db(stock_info_url):
     count = 0
     # 实例化MySQL工具类
     mysql_util_instance = mysql_util.MysqlUtil()
-    for stock in stock_list:
+    for stock in STOCK_LIST:
         count = count + 1
         url = stock_info_url + stock + ".html"
         html = get_html_text(url)
@@ -143,9 +146,9 @@ def get_stock_info_to_db(stock_list, stock_info_url):
             mysql_util.MysqlUtil.add(mysql_util_instance, stock_info=stock_info)
 
             # 打印进度
-            print("\r\n当前进度: {:.2f}%".format(count * 100 / len(stock_list)), end="")
+            print("\n当前进度: {:.2f}%".format(count * 100 / len(STOCK_LIST)), end="")
         except Exception as e:
-            print("\r\n获取股票信息{%s}Err." % stock, e)
+            print("\n获取股票信息{%s}Err." % stock, e)
             continue
 
 
@@ -153,11 +156,10 @@ def get_stock_info_to_db(stock_list, stock_info_url):
 def main():
     stock_list_url = 'http://quote.eastmoney.com/stocklist.html'
     stock_info_url = 'https://gupiao.baidu.com/stock/'
-    stock_list = []
-    get_stock_list(stock_list, stock_list_url)
+    get_stock_list(stock_list_url)
     # output_file = 'C:/WorkCenter/_Temp/PyDownload/StockInfoList.txt'
-    # get_stock_info_to_file(stock_list, stock_info_url, output_file)
-    get_stock_info_to_db(stock_list, stock_info_url)
+    # get_stock_info_to_file(stock_info_url, output_file)
+    get_stock_info_to_db(stock_info_url)
 
 
 # Call Running Center

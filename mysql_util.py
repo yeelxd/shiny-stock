@@ -23,9 +23,9 @@ class MysqlUtil(object):
             )
             self.conn = conn
             self.cursor = conn.cursor()
-            print("\r\nMySQL连接成功")
+            print("\nMySQL连接成功")
         except Exception as e:
-            print("\r\nMySQL连接Err.", e)
+            print("\nMySQL连接Err.", e)
 
     # 关闭连接
     def close(self):
@@ -59,7 +59,7 @@ class MysqlUtil(object):
                  stock_info['market_equity'], stock_info['total_equity'],
                  stock_info['industry_part'], stock_info['attention_rate'])
         res = self.cursor.execute(sql)
-        print("\r\nAdd Result=%s" % res)
+        print("\nAdd Result=%s" % res)
         if res:
             self.conn.commit()
         else:
