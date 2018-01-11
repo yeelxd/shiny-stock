@@ -12,11 +12,11 @@
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 
 
--- 导出 shinycenter 的数据库结构
-CREATE DATABASE IF NOT EXISTS `shinycenter` /*!40100 DEFAULT CHARACTER SET utf8 */;
-USE `shinycenter`;
+-- 导出 shiny 的数据库结构
+CREATE DATABASE IF NOT EXISTS `shiny` /*!40100 DEFAULT CHARACTER SET utf8 */;
+USE `shiny`;
 
--- 导出  表 shinycenter.stock_info 结构
+-- 导出  表 shiny.stock_info 结构
 CREATE TABLE IF NOT EXISTS `stock_info` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键PK',
   `stock_type` varchar(8) DEFAULT NULL COMMENT '股票类型(SH-上海交易所，SZ-深圳交易所)',
@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS `stock_info` (
   `turn_rate` varchar(20) DEFAULT NULL COMMENT '换手率(在一定时间内市场中股票转手买卖的频率)',
   `swing_rate` varchar(20) DEFAULT NULL COMMENT '振幅(股票开盘后的当日最高价和最低价之间的差的绝对值与前日收盘价的百分比)',
   `today_price` float(10,2) DEFAULT NULL COMMENT '今天收盘价',
+  `today_rose` VARCHAR(20) NULL DEFAULT NULL COMMENT '今日涨幅',
   `last_price` float(10,2) DEFAULT NULL COMMENT '昨天收盘价',
   `limit_up` float(10,2) DEFAULT NULL COMMENT '涨停价',
   `limit_down` float(10,2) DEFAULT NULL COMMENT '跌停价',
@@ -53,7 +54,7 @@ CREATE TABLE IF NOT EXISTS `stock_info` (
   KEY `IDX_SC` (`stock_type`,`stock_code`,`today_price`,`pe`,`industry_part`,`attention_rate`,`trade_date`,`create_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='股票日数据记录表';
 
--- 正在导出表  shinycenter.stock_info 的数据：~0 rows (大约)
+-- 正在导出表  shiny.stock_info 的数据：~0 rows (大约)
 DELETE FROM `stock_info`;
 /*!40000 ALTER TABLE `stock_info` DISABLE KEYS */;
 /*!40000 ALTER TABLE `stock_info` ENABLE KEYS */;

@@ -12,7 +12,7 @@
 股票详情信息采集来自：
 百度股票        https://gupiao.baidu.com/stock/SH600118.html
 
-数据库使用MySQL：
+数据库使用MySQL：(resources/DB.sql)
 stock_info      股票日数据记录表
 =======================================================================
 id              主键PK
@@ -25,10 +25,11 @@ today_high      今天最高价
 turn_rate       换手率(在一定时间内市场中股票转手买卖的频率)
 swing_rate      振幅(股票开盘后的当日最高价和最低价之间的差的绝对值与前日收盘价的百分比)
 today_price     今天收盘价
+today_rose      今日涨幅
 last_price      昨天收盘价
 limit_up        涨停价
 limit_down      跌停价
-trade_date      交易日期(yy-MM-dd)   
+trade_date      交易日期(yyyy-MM-dd)   
 trade_num       成交量
 trade_amount    成交额
 in_trade        内盘(卖家以买家的买入价而卖出成交，成交价为申买价，说明抛盘比较踊跃)

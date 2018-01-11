@@ -68,13 +68,13 @@ def load_index(url_index):
 
 
 # 循环73页 下载每一页的图片链接
-moreCount = 1
-while moreCount <= 73:
+more_cnt = 1
+while more_cnt <= 73:
     try:
-        basePageUrl = "http://www.meizitu.com/a/more_"
-        basePageUrl += str(moreCount) + ".html"
-        moreCount += 1
-        load_index(basePageUrl)
+        base_page_url = "http://www.meizitu.com/a/more_"
+        base_page_url += str(more_cnt) + ".html"
+        more_cnt += 1
+        load_index(base_page_url)
     except IOError:
         print("Oops! IOError.line 77s.Arise.")
         continue
