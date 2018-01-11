@@ -22,14 +22,12 @@ class MysqlUtil(object):
                 charset=config.db_charset
             )
             self.conn = conn
-            self.cursor = conn.cursor()
-            print("\nMySQL连接成功")
+            print("MySQL连接成功")
         except Exception as e:
-            print("\nMySQL连接Err.", e)
+            print("MySQL连接Err.", e)
 
     # 关闭连接
     def close(self):
-        self.cursor.close()
         self.conn.close()
 
     # 新增记录
@@ -58,31 +56,33 @@ class MysqlUtil(object):
                  stock_info['pe'], stock_info['pb'], stock_info['eps'], stock_info['bps'],
                  stock_info['market_equity'], stock_info['total_equity'],
                  stock_info['industry_part'], stock_info['attention_rate'])
-        res = self.cursor.execute(sql)
-        print("\nAdd Result=%s" % res)
+        cursor = self.conn.cursor()
+        res = cursor.execute(sql)
         if res:
             self.conn.commit()
         else:
             self.conn.rollback()
-        # 关闭连接
-        self.close()
+        # 关闭指针对象
+        cursor.close()
 
     # 根据主键删除一条记录
     def remove(self, sid):
         sql = "delete from stock_info where id='%d'" % sid
-        res = self.cursor.execute(sql)
+        cursor = self.conn.cursor()
+        res = cursor.execute(sql)
         if res:
             self.conn.commit()
         else:
             self.conn.rollback()
-        # 关闭连接
-        self.close()
+        # 关闭指针对象
+        cursor.close()
 
     # 根据主键查询一条记录
     def query_by_sid(self, sid):
         sql = "select * from stock_info where id='%d'" % sid
-        self.cursor.execute(sql)
-        res = self.cursor.fetchone()
-        # 关闭连接
-        self.close()
+        cursor = self.conn.cursor()
+        self.execute(sql)
+        res = self.fetchone()
+        # 关闭指针对象
+        cursor.close()
         return res

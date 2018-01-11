@@ -19,21 +19,26 @@ def get_html_text(url):
         r.encoding = r.apparent_encoding
         return r.text
     except Exception as e:
-        print("\n获取HTML页面内容Err.", e)
+        print("获取HTML页面内容Err.", e)
         return ""
 
 
 # 获取股票列表
 def get_stock_list(stock_list_url):
     html = get_html_text(stock_list_url)
+    # Page Html
     html_soup = BeautifulSoup(html, 'html.parser')
-    all_a = html_soup.find('div', attrs={'class': 'quotebody'}).find_all('li > a')
+    # Html Body
+    quote_body = html_soup.find('div', attrs={'class': 'quotebody'})
+    all_a = quote_body.find_all('a', attrs={'target': '_blank'})
     for a in all_a:
         try:
             href = a.attrs['href']
-            STOCK_LIST.append(re.findall(r"[s][hz][630][0][012]\d{3}", href)[0])
+            stock_code = re.findall(r"[s][hz][630][0][012]\d{3}", href)
+            if len(stock_code) > 0:
+                STOCK_LIST.append(stock_code[0])
         except Exception as e:
-            print("\n获取股票列表Err.", e)
+            print("获取股票列表Err.", e)
             continue
 
 
@@ -64,10 +69,10 @@ def get_stock_info_to_file(stock_info_url, output_file):
                 stock_dict[key] = val
 
             with open(output_file, 'a', encoding='utf-8') as f:
-                f.write(str(stock_dict) + '\n\n')
-                print("\n当前进度: {:.2f}%".format(count * 100 / len(STOCK_LIST)), end="")
+                f.write(str(stock_dict) + '')
+                print("当前进度: {:.2f}%".format(count * 100 / len(STOCK_LIST)))
         except Exception as e:
-            print("\n获取股票信息{%s}Err." % stock, e)
+            print("获取股票信息{%s}Err." % stock, e)
             continue
 
 
@@ -146,10 +151,11 @@ def get_stock_info_to_db(stock_info_url):
             mysql_util.MysqlUtil.add(mysql_util_instance, stock_info=stock_info)
 
             # 打印进度
-            print("\n当前进度: {:.2f}%".format(count * 100 / len(STOCK_LIST)), end="")
+            print("当前进度: {:.2f}%".format(count * 100 / len(STOCK_LIST)))
         except Exception as e:
-            print("\n获取股票信息{%s}Err." % stock, e)
+            print("获取股票信息{%s}Err." % stock, e)
             continue
+    mysql_util_instance.close()
 
 
 # 执行主方法
