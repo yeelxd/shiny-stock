@@ -15,7 +15,8 @@ def get_html_text(url):
         r.raise_for_status()
         r.encoding = r.apparent_encoding
         return r.text
-    except (IOError, RuntimeError, BaseException):
+    except Exception as e:
+        print("\r\n获取HTML页面内容Err.", e)
         return ""
 
 
@@ -28,7 +29,8 @@ def get_stock_list(stock_list, stock_list_url):
         try:
             href = i.attrs['href']
             stock_list.append(re.findall(r"[s][hz][630][0][012]\d{3}", href)[0])
-        except (IOError, RuntimeError, BaseException):
+        except Exception as e:
+            print("\r\n获取股票列表Err.", e)
             continue
 
 
@@ -36,6 +38,7 @@ def get_stock_list(stock_list, stock_list_url):
 def get_stock_info_to_file(stock_list, stock_info_url, output_file):
     count = 0
     for stock in stock_list:
+        count = count + 1
         url = stock_info_url + stock + ".html"
         html = get_html_text(url)
         try:
@@ -59,19 +62,19 @@ def get_stock_info_to_file(stock_list, stock_info_url, output_file):
 
             with open(output_file, 'a', encoding='utf-8') as f:
                 f.write(str(stock_dict) + '\n\n')
-                count = count + 1
-                print("\r当前进度: {:.2f}%".format(
-                    count * 100 / len(stock_list)), end="")
-        except (IOError, RuntimeError, BaseException):
-            count = count + 1
-            print("\r出错进度: {:.2f}%".format(count * 100 / len(stock_list)), end="")
+                print("\r\n当前进度: {:.2f}%".format(count * 100 / len(stock_list)), end="")
+        except Exception as e:
+            print("\r\n获取股票信息{%s}Err." % stock, e)
             continue
 
 
 # 获取股票信息并存入数据库
 def get_stock_info_to_db(stock_list, stock_info_url):
     count = 0
+    # 实例化MySQL工具类
+    mysql_util_instance = mysql_util.MysqlUtil()
     for stock in stock_list:
+        count = count + 1
         url = stock_info_url + stock + ".html"
         html = get_html_text(url)
         try:
@@ -81,14 +84,22 @@ def get_stock_info_to_db(stock_list, stock_info_url):
             soup = BeautifulSoup(html, 'html.parser')
             stock_info_div = soup.find('div', attrs={'class': 'stock-bets'})
 
+            # 是否是已收盘
+            trade_status = stock_info_div.find_all('span')[1].text.strip()
+            if trade_status[0:3] != "已收盘":
+                continue
+
             name = stock_info_div.find_all(attrs={'class': 'bets-name'})[0]
             stock_info.update({'stock_type': stock[0:2].upper()})
             stock_info.update({'stock_code': name.text.split()[0].strip()})
             stock_info.update({'stock_name': name.select("span")[0].text.strip()})
 
             dd_list = stock_info_div.find_all('dd')
-            pe = float(dd_list[8].text.strip())
-            # 根据市盈率筛选优质股票
+            pe_str = dd_list[8].text.strip()
+            if pe_str == "--":
+                continue
+            # 筛选市盈率<=100
+            pe = float(pe_str)
             if pe > 100:
                 continue
             stock_info.update({'today_open': float(dd_list[0].text.strip())})
@@ -129,14 +140,12 @@ def get_stock_info_to_db(stock_list, stock_info_url):
             stock_info.update({'attention_rate': int(attention_rate)})
 
             # 保存到MySQL数据库中
-            mysql_util.MysqlUtil.add(mysql_util.MysqlUtil(), stock_info=stock_info)
+            mysql_util.MysqlUtil.add(mysql_util_instance, stock_info=stock_info)
 
             # 打印进度
-            count = count + 1
-            print("\r当前进度: {:.2f}%".format(count * 100 / len(stock_list)), end="")
+            print("\r\n当前进度: {:.2f}%".format(count * 100 / len(stock_list)), end="")
         except Exception as e:
-            print(e)
-            count = count + 1
+            print("\r\n获取股票信息{%s}Err." % stock, e)
             continue
 
 

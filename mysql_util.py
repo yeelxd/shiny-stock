@@ -10,7 +10,7 @@ from config import config
 class MysqlUtil(object):
 
     # 初始化
-    def get_conn(self):
+    def __init__(self):
         # 连接MySQL
         try:
             conn = pymysql.connect(
@@ -21,10 +21,16 @@ class MysqlUtil(object):
                 db=config.db_name,
                 charset=config.db_charset
             )
-            print('连接成功')
-            return conn
+            self.conn = conn
+            self.cursor = conn.cursor()
+            print("\r\nMySQL连接成功")
         except Exception as e:
-            print(e)
+            print("\r\nMySQL连接Err.", e)
+
+    # 关闭连接
+    def close(self):
+        self.cursor.close()
+        self.conn.close()
 
     # 新增记录
     def add(self, stock_info):
@@ -52,38 +58,31 @@ class MysqlUtil(object):
                  stock_info['pe'], stock_info['pb'], stock_info['eps'], stock_info['bps'],
                  stock_info['market_equity'], stock_info['total_equity'],
                  stock_info['industry_part'], stock_info['attention_rate'])
-        conn = self.get_conn()
-        cursor = conn.cursor()
-        res = cursor.execute(sql)
-        print(res)
+        res = self.cursor.execute(sql)
+        print("\r\nAdd Result=%s" % res)
         if res:
-            conn.commit()
+            self.conn.commit()
         else:
-            conn.rollback()
+            self.conn.rollback()
         # 关闭连接
-        cursor.close()
-        conn.close()
+        self.close()
 
     # 根据主键删除一条记录
     def remove(self, sid):
         sql = "delete from stock_info where id='%d'" % sid
-        conn = self.get_conn()
-        cursor = conn.cursor()
-        res = cursor.execute(sql)
-        print(res)
+        res = self.cursor.execute(sql)
         if res:
-            conn.commit()
+            self.conn.commit()
         else:
-            conn.rollback()
+            self.conn.rollback()
         # 关闭连接
-        cursor.close()
-        conn.close()
+        self.close()
 
     # 根据主键查询一条记录
     def query_by_sid(self, sid):
         sql = "select * from stock_info where id='%d'" % sid
-        conn = self.get_conn()
-        cursor = conn.cursor()
-        cursor.execute(sql)
-        res = cursor.fetchone()
-        print(res)
+        self.cursor.execute(sql)
+        res = self.cursor.fetchone()
+        # 关闭连接
+        self.close()
+        return res
