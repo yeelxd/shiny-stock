@@ -29,6 +29,7 @@ class MysqlUtil(object):
     # 关闭连接
     def close(self):
         self.conn.close()
+        print("MySQL关闭成功")
 
     # 新增记录
     def add(self, stock_info):

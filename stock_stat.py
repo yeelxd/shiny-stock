@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import re
 import time
 import mysql_util
+import json
 
 # 股票列表
 STOCK_LIST = []
@@ -77,7 +78,7 @@ def get_stock_info_to_file(stock_info_url, output_file):
 
 
 # 获取股票信息并存入数据库
-def get_stock_info_to_db(stock_info_url):
+def get_stock_info_to_db(stock_info_url, stock_attention_url):
     count = 0
     # 实例化MySQL工具类
     mysql_util_instance = mysql_util.MysqlUtil()
@@ -104,11 +105,15 @@ def get_stock_info_to_db(stock_info_url):
 
             dd_list = stock_info_div.find_all('dd')
             pe_str = dd_list[8].text.strip()
-            if pe_str == "--":
+            pb_str = dd_list[19].text.strip()
+            if pe_str == "--" or pb_str == "--":
                 continue
-            # 筛选市盈率<=100
+            # 严格控制系数
+            # 一般市盈率{市盈率=股价/每股收益}合理区间[10-20]
+            # 一般市净率{市净率=股价/每股净资产}合理区间[3-10]
             pe = float(pe_str)
-            if pe > 100:
+            pb = float(pb_str)
+            if pe > 20 or pb > 10:
                 continue
             stock_info.update({'today_open': float(dd_list[0].text.strip())})
             stock_info.update({'today_low': float(dd_list[13].text.strip())})
@@ -134,7 +139,7 @@ def get_stock_info_to_db(stock_info_url):
             stock_info.update({'market_value': dd_list[7].text.strip()})
             stock_info.update({'total_value': dd_list[18].text.strip()})
             stock_info.update({'pe': pe})
-            stock_info.update({'pb': float(dd_list[19].text.strip())})
+            stock_info.update({'pb': pb})
             stock_info.update({'eps': float(dd_list[9].text.strip())})
             stock_info.update({'bps': float(dd_list[20].text.strip())})
             stock_info.update({'market_equity': dd_list[21].text.strip()})
@@ -144,29 +149,44 @@ def get_stock_info_to_db(stock_info_url):
             industry_part = soup.find('div', attrs={'class': 'industry'}).find_all('p')[0].text.strip()
             stock_info.update({'industry_part': industry_part})
             # 关注度
-            attention_rate = soup.find('span', attrs={'class': 'add-stock-count'}).text.strip()
+            attention_rate = 0
+            attention_url = stock_attention_url + stock
+            attention_html = get_html_text(attention_url)
+            if attention_html != "":
+                attention_json = json.loads(attention_html)
+                if attention_json['errorMsg'] == "success":
+                    attention_rate = attention_json['data']
             stock_info.update({'attention_rate': int(attention_rate)})
 
             # 保存到MySQL数据库中
             mysql_util.MysqlUtil.add(mysql_util_instance, stock_info=stock_info)
 
             # 打印进度
-            print("当前进度: {:.2f}%".format(count * 100 / len(STOCK_LIST)))
+            print("当前处理进度: {:.2f}%".format(count*100 / len(STOCK_LIST)))
         except Exception as e:
             print("获取股票信息{%s}Err." % stock, e)
             continue
+    # 关闭MySQL数据库的连接
     mysql_util_instance.close()
 
 
 # 执行主方法
-def main():
+def main_center():
     stock_list_url = 'http://quote.eastmoney.com/stocklist.html'
     stock_info_url = 'https://gupiao.baidu.com/stock/'
+    stock_attention_url = 'https://gupiao.baidu.com/stock/api/rails/stockfollownum?stock_code='
     get_stock_list(stock_list_url)
     # output_file = 'C:/WorkCenter/_Temp/PyDownload/StockInfoList.txt'
     # get_stock_info_to_file(stock_info_url, output_file)
-    get_stock_info_to_db(stock_info_url)
+    # 记录开始时间
+    start_time = time.time()
+    # 筛选股票信息保存到数据库中
+    get_stock_info_to_db(stock_info_url, stock_attention_url)
+    end_time = time.time()
+    # 计算程序执行耗时
+    total_time = end_time - start_time
+    print("筛选股票信息完毕，耗时：{0:.5f}秒".format(total_time))
 
 
 # Call Running Center
-main()
+main_center()
