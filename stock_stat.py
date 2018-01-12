@@ -35,7 +35,7 @@ def get_stock_list(stock_list_url):
     for a in all_a:
         try:
             href = a.attrs['href']
-            stock_code = re.findall(r"[s][hz][630][0][012]\d{3}", href)
+            stock_code = re.findall(r"[s][hz][60][0][012]\d{3}", href)
             if len(stock_code) > 0:
                 STOCK_LIST.append(stock_code[0])
         except Exception as e:
