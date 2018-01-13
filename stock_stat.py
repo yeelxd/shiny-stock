@@ -106,14 +106,22 @@ def get_stock_info_to_db(stock_info_url, stock_attention_url):
             dd_list = stock_info_div.find_all('dd')
             pe_str = dd_list[8].text.strip()
             pb_str = dd_list[19].text.strip()
-            if pe_str == "--" or pb_str == "--":
+            eps_str = dd_list[9].text.strip()
+            bps_str = dd_list[20].text.strip()
+            if pe_str == "--" or pb_str == "--" or eps_str == "--" or bps_str == "--":
                 continue
             # 严格控制系数
-            # 一般市盈率{市盈率=股价/每股收益}合理区间[10-20]
-            # 一般市净率{市净率=股价/每股净资产}合理区间[3-10]
+            # 一般市盈率{pe=股价/每股收益}合理区间[10-20]
+            # 一般市净率{pb=股价/每股净资产}合理区间[3-10]
+            # 一般每股收益{eps=税后利润与股本总数的比率}合理区间[>0.3]
             pe = float(pe_str)
             pb = float(pb_str)
-            if pe > 20 or pb > 10:
+            eps = float(eps_str)
+            # 每股净资产{bps=股东权益 / 总股数}
+            bps = float(bps_str)
+            # 一般净资产收益率{roe=每股收益eps/每股净资产bps}合理区间[>15%]
+            roe = eps * 100 / bps
+            if pe > 20 or pb > 10 or eps < 0.3 or roe < 15:
                 continue
             stock_info.update({'today_open': float(dd_list[0].text.strip())})
             stock_info.update({'today_low': float(dd_list[13].text.strip())})
@@ -122,6 +130,8 @@ def get_stock_info_to_db(stock_info_url, stock_attention_url):
             stock_info.update({'swing_rate': dd_list[16].text.strip()})
             # 今日价格
             today_price = stock_info_div.find('strong', attrs={'class': '_close'}).text.strip()
+            if today_price == "--":
+                continue
             stock_info.update({'today_price': float(today_price)})
             # 今日涨幅
             today_rose = stock_info_div.find_all('span')[3].text.strip()
@@ -140,8 +150,8 @@ def get_stock_info_to_db(stock_info_url, stock_attention_url):
             stock_info.update({'total_value': dd_list[18].text.strip()})
             stock_info.update({'pe': pe})
             stock_info.update({'pb': pb})
-            stock_info.update({'eps': float(dd_list[9].text.strip())})
-            stock_info.update({'bps': float(dd_list[20].text.strip())})
+            stock_info.update({'eps': eps})
+            stock_info.update({'bps': bps})
             stock_info.update({'market_equity': dd_list[21].text.strip()})
             stock_info.update({'total_equity': dd_list[10].text.strip()})
 
@@ -181,6 +191,7 @@ def main_center():
     # 记录开始时间
     start_time = time.time()
     # 筛选股票信息保存到数据库中
+    print("待筛选的股票数量={}".format(len(STOCK_LIST)))
     get_stock_info_to_db(stock_info_url, stock_attention_url)
     end_time = time.time()
     # 计算程序执行耗时
