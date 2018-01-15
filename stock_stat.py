@@ -8,6 +8,7 @@ import time
 import mysql_util
 import json
 import os
+from multiprocessing.dummy import Pool
 
 # 股票详情列表URL
 STOCK_URL_LIST = []
@@ -48,6 +49,9 @@ def get_stock_list(stock_list_url, stock_info_url):
 
 # 获取股票信息并存入数据库
 def get_stock_info_to_db(stock_info_url):
+    # Debugger URL
+    # stock_info_url = "https://gupiao.baidu.com/stock/sh600359.html"
+
     # 关注度获取API
     stock_attention_url = 'https://gupiao.baidu.com/stock/api/rails/stockfollownum?stock_code='
     # 获取股票信息
@@ -64,8 +68,8 @@ def get_stock_info_to_db(stock_info_url):
 
         # 是否是已收盘
         trade_status = stock_info_div.find_all('span')[1].text.strip()
-        # 状态: 停牌/交易中/已收盘/已休市
-        if trade_status[0:3] != "交易中":
+        # 状态: 停牌/交易中/已收盘/已休市/已退市
+        if trade_status[0:3] != "已收盘":
             return
 
         name = stock_info_div.find_all(attrs={'class': 'bets-name'})[0]
@@ -161,18 +165,11 @@ def main_center():
     print("待筛选的股票数量={}".format(len(STOCK_URL_LIST)))
     # 记录开始时间
     start_time = time.time()
-    '''
-        使用四个进程处理
-        # from multiprocessing.dummy import Pool
-        pool = Pool(4)
-        pool.map(get_stock_info_to_db, STOCK_URL_LIST)
-        pool.close()
-        pool.join()
-    '''
-    for stock_url in STOCK_URL_LIST:
-        get_stock_info_to_db(stock_url)
-        # 线程休眠1s
-        time.sleep(1)
+    # 使用四个进程处理任务
+    pool = Pool(4)
+    pool.map(get_stock_info_to_db, STOCK_URL_LIST)
+    pool.close()
+    pool.join()
     end_time = time.time()
     # 计算程序执行耗时
     total_time = end_time - start_time
