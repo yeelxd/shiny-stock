@@ -49,5 +49,12 @@ industry_part   所属行业
 attention_rate  关注度(多少人关注该股票)
 create_date     创建时间
 =======================================================================
-
+<div class="wrap">
+    <div class="error-page">
+        <div class="error-page-bg"></div>
+        <h2>404</h2>
+        <p>雾霾太大，连页面都看不见了</p>
+        <a href="/" target="_parent">去首页看看</a>
+    </div>
+</div>
 
