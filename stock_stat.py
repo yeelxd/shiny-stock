@@ -60,6 +60,7 @@ def get_stock_info_to_db(stock_info_url):
         stock_info = {}
         soup = BeautifulSoup(html, 'html.parser')
         stock_info_div = soup.find('div', attrs={'class': 'stock-bets'})
+        industry_div = soup.find('div', attrs={'class': 'industry'})
 
         # 是否是已收盘
         trade_status = stock_info_div.find_all('span')[1].text.strip()
@@ -130,10 +131,7 @@ def get_stock_info_to_db(stock_info_url):
         stock_info.update({'total_equity': dd_list[10].text.strip()})
 
         # 所属行业
-        industry_div = soup.find('div', attrs={'class': 'industry'})
-        industry_part = industry_div.find_all('p')[0].text.strip()
-        if industry_part == "":
-            industry_part = industry_div.find('p').text.strip()
+        industry_part = industry_div.find('p').text.strip()
         stock_info.update({'industry_part': industry_part})
         # 关注度
         attention_rate = 0
