@@ -18,8 +18,10 @@ MYSQL_UTIL_INSTANCE = mysql_util.MysqlUtil()
 
 # 获取HTML页面内容
 def get_html_text(url):
+    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0"
+    header = {'User-Agent': user_agent, 'Accept': '*/*'}
     try:
-        r = requests.get(url)
+        r = requests.get(url, headers=header)
         r.raise_for_status()
         r.encoding = r.apparent_encoding
         return r.text
