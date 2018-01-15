@@ -37,13 +37,13 @@ class MysqlUtil(object):
                 today_open, today_low, today_high, turn_rate, swing_rate, \
                 today_price, today_rose, last_price, limit_up, limit_down, trade_date, \
                 trade_num, trade_amount, in_trade, out_trade, trade_scale, \
-                volume_scale, market_value, total_value, pe, pb, eps, bps, \
+                volume_scale, market_value, total_value, pe, pb, eps, bps, roe, \
                 market_equity, total_equity, industry_part, attention_rate, \
                 create_date) values('%s', '%s', '%s', \
                 '%f', '%f', '%f', '%s', '%s', \
                 '%f', '%s', '%f', '%f', '%f', '%s', \
                 '%s', '%s', '%s', '%s', '%s', \
-                '%s', '%s', '%s', '%F', '%f', '%F', '%f', \
+                '%s', '%s', '%s', '%F', '%f', '%F', '%f', '%f', \
                 '%s', '%s', '%s', '%d', \
                 NOW())" % \
                 (stock_info['stock_type'], stock_info['stock_code'], stock_info['stock_name'],
@@ -54,7 +54,7 @@ class MysqlUtil(object):
                  stock_info['trade_date'], stock_info['trade_num'], stock_info['trade_amount'],
                  stock_info['in_trade'], stock_info['out_trade'], stock_info['trade_scale'],
                  stock_info['volume_scale'], stock_info['market_value'], stock_info['total_value'],
-                 stock_info['pe'], stock_info['pb'], stock_info['eps'], stock_info['bps'],
+                 stock_info['pe'], stock_info['pb'], stock_info['eps'], stock_info['bps'], stock_info['roe'],
                  stock_info['market_equity'], stock_info['total_equity'],
                  stock_info['industry_part'], stock_info['attention_rate'])
         cursor = self.conn.cursor()
@@ -82,8 +82,7 @@ class MysqlUtil(object):
     def query_by_sid(self, sid):
         sql = "select * from stock_info where id='%d'" % sid
         cursor = self.conn.cursor()
-        self.execute(sql)
-        res = self.fetchone()
+        res = cursor.execute(sql).fetchone()
         # 关闭指针对象
         cursor.close()
         return res

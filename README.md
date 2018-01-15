@@ -42,6 +42,7 @@ pe              市盈率MRQ(每股市价除以每股盈利(Earnings Per Share,E
 pb              市净率(每股股价与每股净资产的比率)
 eps             每股收益(又称每股税后利润、每股盈余，指税后利润与股本总数的比率)
 bps             每股净资产(每股帐面价值，股东权益 / 总股数)
+roe             净资产收益率ROE(%)(每股收益eps/每股净资产bps)
 market_equity   流通股本
 total_equity    总股票
 industry_part   所属行业

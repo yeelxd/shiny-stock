@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS `stock_info` (
   `pb` float(10,2) DEFAULT NULL COMMENT '市净率(每股股价与每股净资产的比率)',
   `eps` double(10,2) DEFAULT NULL COMMENT '每股收益(又称每股税后利润、每股盈余，指税后利润与股本总数的比率)',
   `bps` float(10,2) DEFAULT NULL COMMENT '每股净资产(每股帐面价值，股东权益 / 总股数)',
+  `roe` float(10,2) NULL DEFAULT NULL COMMENT '净资产收益率ROE(%)(每股收益eps/每股净资产bps)',
   `market_equity` varchar(50) DEFAULT NULL COMMENT '流通股本',
   `total_equity` varchar(50) DEFAULT NULL COMMENT '总股票',
   `industry_part` varchar(100) DEFAULT NULL COMMENT '所属行业',
