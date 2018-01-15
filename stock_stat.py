@@ -21,7 +21,8 @@ def get_html_text(url):
     user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0"
     header = {'User-Agent': user_agent, 'Accept': '*/*'}
     try:
-        r = requests.get(url, headers=header)
+        # 不设置超时时间, 一直等待中..
+        r = requests.get(url, headers=header, timeout=None)
         r.raise_for_status()
         r.encoding = r.apparent_encoding
         return r.text
@@ -53,7 +54,6 @@ def get_stock_list(stock_list_url, stock_info_url):
 def get_stock_info_to_db(stock_info_url):
     # Debugger URL
     # stock_info_url = "https://gupiao.baidu.com/stock/sh600359.html"
-
     # 关注度获取API
     stock_attention_url = 'https://gupiao.baidu.com/stock/api/rails/stockfollownum?stock_code='
     # 获取股票信息
@@ -67,6 +67,9 @@ def get_stock_info_to_db(stock_info_url):
         soup = BeautifulSoup(html, 'html.parser')
         stock_info_div = soup.find('div', attrs={'class': 'stock-bets'})
         industry_div = soup.find('div', attrs={'class': 'industry'})
+        if stock_info_div is None or industry_div is None:
+            print("获取股票信息{%s} is None." % stock)
+            return
 
         # 是否是已收盘
         trade_status = stock_info_div.find_all('span')[1].text.strip()
@@ -151,8 +154,7 @@ def get_stock_info_to_db(stock_info_url):
 
         # 保存到MySQL数据库中
         mysql_util.MysqlUtil.add(MYSQL_UTIL_INSTANCE, stock_info=stock_info)
-
-        print("成功筛股一枚: pid={}, url={}".format(os.getpid(), stock_info_url))
+        print("保存成功: pid={}, url={}".format(os.getpid(), stock_info_url))
         print("所在列表位置: {}/{}".format(STOCK_URL_LIST.index(stock_info_url), len(STOCK_URL_LIST)))
     except Exception as e:
         print("获取股票信息{%s}Err." % stock, e)
