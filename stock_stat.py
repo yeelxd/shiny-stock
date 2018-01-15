@@ -68,7 +68,7 @@ def get_stock_info_to_db(stock_info_url):
         stock_info_div = soup.find('div', attrs={'class': 'stock-bets'})
         industry_div = soup.find('div', attrs={'class': 'industry'})
         if stock_info_div is None or industry_div is None:
-            print("获取股票信息{%s} is None." % stock)
+            print("获取股票信息{%s} is None. html={}" % (stock, html))
             return
 
         # 是否是已收盘
