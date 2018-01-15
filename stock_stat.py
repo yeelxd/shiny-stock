@@ -8,7 +8,7 @@ import time
 import mysql_util
 import json
 import os
-from multiprocessing.dummy import Pool
+
 
 # 股票详情列表URL
 STOCK_URL_LIST = []
@@ -44,7 +44,10 @@ def get_stock_list(stock_list_url, stock_info_url):
             href = a.attrs['href']
             stock_code = re.findall(r"[s][hz][60][0][012]\d{3}", href)
             if len(stock_code) > 0:
-                STOCK_URL_LIST.append(stock_info_url + stock_code[0] + ".html")
+                stock_url = stock_info_url + stock_code[0] + ".html"
+                # 谨防重复处理
+                if STOCK_URL_LIST.count(stock_url) == 0:
+                    STOCK_URL_LIST.append(stock_url)
         except Exception as e:
             print("获取股票列表Err.", e)
             continue
@@ -68,7 +71,7 @@ def get_stock_info_to_db(stock_info_url):
         stock_info_div = soup.find('div', attrs={'class': 'stock-bets'})
         industry_div = soup.find('div', attrs={'class': 'industry'})
         if stock_info_div is None or industry_div is None:
-            print("获取股票信息{%s} is None. html={}" % (stock, html))
+            print("获取股票信息{%s} is None. html={%s}" % (stock, html))
             return
 
         # 是否是已收盘
@@ -169,11 +172,16 @@ def main_center():
     print("待筛选的股票数量={}".format(len(STOCK_URL_LIST)))
     # 记录开始时间
     start_time = time.time()
-    # 使用四个进程处理任务
+    '''
+    # 使用四个进程处理任务(存在重复添加的问题)
+    # from multiprocessing.dummy import Pool
     pool = Pool(4)
     pool.map(get_stock_info_to_db, STOCK_URL_LIST)
     pool.close()
     pool.join()
+    '''
+    for stock_url in STOCK_URL_LIST:
+        get_stock_info_to_db(stock_url)
     end_time = time.time()
     # 计算程序执行耗时
     total_time = end_time - start_time
