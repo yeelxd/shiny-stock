@@ -22,16 +22,18 @@ class MysqlUtil(object):
                 charset=config.db_charset
             )
             self.conn = conn
-            print("MySQL连接成功")
+            self.cursor = conn.cursor()
+            print("MySQL Connect Success.")
         except Exception as e:
-            print("MySQL连接Err.", e)
+            print("MySQL Connect Err.", e)
 
     # 关闭连接
     def close(self):
+        self.cursor.close()
         self.conn.close()
-        print("MySQL关闭成功")
+        print("MySQL Close Success.")
 
-    # 新增记录
+    # 新增一条记录
     def add(self, stock_info):
         sql = "insert into stock_info(stock_type, stock_code, stock_name, \
                 today_open, today_low, today_high, turn_rate, swing_rate, \
@@ -40,11 +42,11 @@ class MysqlUtil(object):
                 volume_scale, market_value, total_value, pe, pb, eps, bps, roe, \
                 market_equity, total_equity, industry_part, attention_rate, \
                 create_date) values('%s', '%s', '%s', \
-                '%f', '%f', '%f', '%s', '%s', \
-                '%f', '%s', '%f', '%f', '%f', '%s', \
+                %f, %f, %f, '%s', '%s', \
+                %f, '%s', %f, %f, %f, '%s', \
                 '%s', '%s', '%s', '%s', '%s', \
-                '%s', '%s', '%s', '%F', '%f', '%F', '%f', '%f', \
-                '%s', '%s', '%s', '%d', \
+                '%s', '%s', '%s', %f, %f, %f, %f, %f, \
+                '%s', '%s', '%s', %d, \
                 NOW())" % \
                 (stock_info['stock_type'], stock_info['stock_code'], stock_info['stock_name'],
                  stock_info['today_open'], stock_info['today_low'], stock_info['today_high'],
@@ -57,32 +59,73 @@ class MysqlUtil(object):
                  stock_info['pe'], stock_info['pb'], stock_info['eps'], stock_info['bps'], stock_info['roe'],
                  stock_info['market_equity'], stock_info['total_equity'],
                  stock_info['industry_part'], stock_info['attention_rate'])
-        cursor = self.conn.cursor()
-        res = cursor.execute(sql)
-        if res:
+        try:
+            self.cursor.execute(sql)
             self.conn.commit()
-        else:
+        except Exception as e:
+            print("add Err.", e)
             self.conn.rollback()
-        # 关闭指针对象
-        cursor.close()
+
+    # 新增多条记录
+    def add_many(self, stock_info_list):
+        # 不管什么类型，统一使用%s/?作为占位符
+        sql = "insert into stock_info(stock_type, stock_code, stock_name, \
+                today_open, today_low, today_high, turn_rate, swing_rate, \
+                today_price, today_rose, last_price, limit_up, limit_down, trade_date, \
+                trade_num, trade_amount, in_trade, out_trade, trade_scale, \
+                volume_scale, market_value, total_value, pe, pb, eps, bps, roe, \
+                market_equity, total_equity, industry_part, attention_rate, \
+                create_date) values(%s, %s, %s, \
+                %s, %s, %s, %s, %s, \
+                %s, %s, %s, %s, %s, %s, \
+                %s, %s, %s, %s, %s, \
+                %s, %s, %s, %s, %s, %s, %s, %s, \
+                %s, %s, %s, %s, \
+                NOW())"
+        params = []
+        for stock_info in stock_info_list:
+            params.append((stock_info['stock_type'], stock_info['stock_code'], stock_info['stock_name'],
+                          stock_info['today_open'], stock_info['today_low'], stock_info['today_high'],
+                          stock_info['turn_rate'], stock_info['swing_rate'],
+                          stock_info['today_price'], stock_info['today_rose'], stock_info['last_price'],
+                          stock_info['limit_up'], stock_info['limit_down'], stock_info['trade_date'],
+                          stock_info['trade_num'], stock_info['trade_amount'], stock_info['in_trade'],
+                          stock_info['out_trade'], stock_info['trade_scale'],
+                          stock_info['volume_scale'], stock_info['market_value'], stock_info['total_value'],
+                          stock_info['pe'], stock_info['pb'], stock_info['eps'], stock_info['bps'],
+                          stock_info['roe'],
+                          stock_info['market_equity'], stock_info['total_equity'],
+                          stock_info['industry_part'], stock_info['attention_rate']))
+        try:
+            self.cursor.executemany(sql, args=params)
+            self.conn.commit()
+            print("Saved success. Count={}".format(len(stock_info_list)))
+        except Exception as e:
+            print("add_many Err.", e)
+            self.conn.rollback()
 
     # 根据主键删除一条记录
     def remove(self, sid):
         sql = "delete from stock_info where id='%d'" % sid
-        cursor = self.conn.cursor()
-        res = cursor.execute(sql)
-        if res:
+        try:
+            self.cursor.execute(sql)
             self.conn.commit()
-        else:
+        except Exception as e:
+            print("remove Err.", e)
             self.conn.rollback()
-        # 关闭指针对象
-        cursor.close()
 
     # 根据主键查询一条记录
     def query_by_sid(self, sid):
-        sql = "select * from stock_info where id='%d'" % sid
-        cursor = self.conn.cursor()
-        res = cursor.execute(sql).fetchone()
-        # 关闭指针对象
-        cursor.close()
-        return res
+        sql = "select * from stock_info where id=%d" % sid
+        try:
+            self.cursor.execute(sql)
+            res = self.cursor.fetchone()
+            return res
+        except Exception as e:
+            print("query_by_sid Err.", e)
+            self.conn.rollback()
+
+
+if __name__ == "__main__":
+    MysqlUtil = MysqlUtil()
+    print(MysqlUtil.query_by_sid(1))

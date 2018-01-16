@@ -8,12 +8,13 @@ import time
 import mysql_util
 import json
 import os
+from multiprocessing.dummy import Pool
 
 
-# 股票详情列表URL
+# 股票详情URL列表
 STOCK_URL_LIST = []
-# 实例化MySQL工具类
-MYSQL_UTIL_INSTANCE = mysql_util.MysqlUtil()
+# 股票信息对象列表
+STOCK_INFO_LIST = []
 
 
 # 获取HTML页面内容
@@ -53,8 +54,8 @@ def get_stock_list(stock_list_url, stock_info_url):
             continue
 
 
-# 获取股票信息并存入数据库
-def get_stock_info_to_db(stock_info_url):
+# 获取股票详情信息
+def package_stock_info(stock_info_url):
     # Debugger URL
     # stock_info_url = "https://gupiao.baidu.com/stock/sh600359.html"
     # 关注度获取API
@@ -63,30 +64,33 @@ def get_stock_info_to_db(stock_info_url):
     start_rot = stock_info_url.rfind("/")+1
     stock = stock_info_url[start_rot:start_rot+8]
     html = get_html_text(stock_info_url)
+    # Http出错再获取一次
+    if html == "" or html.count('class="error-page-bg"') > 0:
+        html = get_html_text(stock_info_url)
     try:
-        if html == "":
-            return
-        stock_info = {}
+        if html == "" or html.count('class="error-page-bg"') > 0:
+            return None
         soup = BeautifulSoup(html, 'html.parser')
         stock_info_div = soup.find('div', attrs={'class': 'stock-bets'})
         industry_div = soup.find('div', attrs={'class': 'industry'})
         if stock_info_div is None or industry_div is None:
             print("获取股票信息{%s} is None. html={%s}" % (stock, html))
-            return
+            return None
 
         # 是否是已收盘
         trade_status = stock_info_div.find_all('span')[1].text.strip()
-        # 状态: 停牌/交易中/已收盘/已休市/已退市
-        if trade_status[0:3] != "已收盘":
-            return
+        # 状态: 停牌/未开盘/交易中/午间休市/已收盘/已休市/已退市
+        if trade_status[0:3] not in ("交易中", "已收盘"):
+            return None
 
+        stock_info = {}
         name = stock_info_div.find_all(attrs={'class': 'bets-name'})[0]
         stock_info.update({'stock_type': stock[0:2].upper()})
         stock_info.update({'stock_code': name.select("span")[0].text.strip()})
         name_text_str = name.text.strip()
         stock_name = name_text_str[0:name_text_str.index("(")].strip()
         if stock_name[0:1] == "N" or stock_name.count("ST") > 0:
-            return
+            return None
         stock_info.update({'stock_name': stock_name})
 
         dd_list = stock_info_div.find_all('dd')
@@ -95,7 +99,7 @@ def get_stock_info_to_db(stock_info_url):
         eps_str = dd_list[9].text.strip()
         bps_str = dd_list[20].text.strip()
         if pe_str == "--" or pb_str == "--" or eps_str == "--" or bps_str == "--":
-            return
+            return None
         # 严格控制系数
         # 一般市盈率{pe=股价/每股收益}合理区间[10-20]
         # 一般市净率{pb=股价/每股净资产}合理区间[3-10]
@@ -108,7 +112,7 @@ def get_stock_info_to_db(stock_info_url):
         # 一般净资产收益率{roe=每股收益eps/每股净资产bps}合理区间[>15%]
         roe = eps * 100 / bps
         if pe > 20 or pb > 10 or eps < 0.3 or roe < 15:
-            return
+            return None
         stock_info.update({'today_open': float(dd_list[0].text.strip())})
         stock_info.update({'today_low': float(dd_list[13].text.strip())})
         stock_info.update({'today_high': float(dd_list[2].text.strip())})
@@ -117,7 +121,7 @@ def get_stock_info_to_db(stock_info_url):
         # 今日价格
         today_price = stock_info_div.find('strong', attrs={'class': '_close'}).text.strip()
         if today_price == "--":
-            return
+            return None
         stock_info.update({'today_price': float(today_price)})
         # 今日涨幅
         today_rose = stock_info_div.find_all('span')[3].text.strip()
@@ -154,10 +158,9 @@ def get_stock_info_to_db(stock_info_url):
             if attention_json['errorMsg'] == "success":
                 attention_rate = attention_json['data']
         stock_info.update({'attention_rate': int(attention_rate)})
-
-        # 保存到MySQL数据库中
-        mysql_util.MysqlUtil.add(MYSQL_UTIL_INSTANCE, stock_info=stock_info)
-        print("保存成功: pid={}, url={}".format(os.getpid(), stock_info_url))
+        # 封装好的信息添加到待处理列表
+        STOCK_INFO_LIST.append(stock_info)
+        print("获取成功: pid={}, url={}".format(os.getpid(), stock_info_url))
         print("所在列表位置: {}/{}".format(STOCK_URL_LIST.index(stock_info_url), len(STOCK_URL_LIST)))
     except Exception as e:
         print("获取股票信息{%s}Err." % stock, e)
@@ -172,22 +175,25 @@ def main_center():
     print("待筛选的股票数量={}".format(len(STOCK_URL_LIST)))
     # 记录开始时间
     start_time = time.time()
-    '''
-    # 使用四个进程处理任务(存在重复添加的问题)
-    # from multiprocessing.dummy import Pool
+    # 使用四个进程处理任务
     pool = Pool(4)
-    pool.map(get_stock_info_to_db, STOCK_URL_LIST)
+    pool.map(package_stock_info, STOCK_URL_LIST)
     pool.close()
     pool.join()
-    '''
-    for stock_url in STOCK_URL_LIST:
-        get_stock_info_to_db(stock_url)
+    # 列表去重
+    new_stock_info_list = []
+    for stock_info in STOCK_INFO_LIST:
+        if stock_info not in new_stock_info_list:
+            new_stock_info_list.append(stock_info)
+    # 保存到DB
+    # 实例化MySQL工具类并保存
+    mysql_util_instance = mysql_util.MysqlUtil()
+    mysql_util_instance.add_many(new_stock_info_list)
+    mysql_util_instance.close()
     end_time = time.time()
     # 计算程序执行耗时
     total_time = end_time - start_time
-    print("筛选股票信息完毕，耗时：{0:.2f}秒".format(total_time))
-    # 关闭MySQL数据库的连接
-    MYSQL_UTIL_INSTANCE.close()
+    print("筛选股票信息完毕，共获取[{0}]只，耗时：{1:.2f}秒".format(len(new_stock_info_list), total_time))
 
 
 # Call Running Center

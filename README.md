@@ -49,6 +49,7 @@ industry_part   所属行业
 attention_rate  关注度(多少人关注该股票)
 create_date     创建时间
 =======================================================================
+频繁访问出错:
 <div class="wrap">
     <div class="error-page">
         <div class="error-page-bg"></div>
