@@ -9,7 +9,8 @@ from config import config
 # MySQL操作类，使用ini的配置文件
 class MysqlUtil(object):
 
-    # 初始化
+    # 初始化方法
+    # 创建完对象后会自动被调用
     def __init__(self):
         # 连接MySQL
         try:
@@ -23,15 +24,15 @@ class MysqlUtil(object):
             )
             self.conn = conn
             self.cursor = conn.cursor()
-            print("MySQL Connect Success.")
+            print("MySQL connect success.")
         except Exception as e:
-            print("MySQL Connect Err.", e)
+            print("MySQL connect Err.", e)
 
     # 关闭连接
     def close(self):
         self.cursor.close()
         self.conn.close()
-        print("MySQL Close Success.")
+        print("MySQL close success.")
 
     # 新增一条记录
     def add(self, stock_info):
@@ -99,7 +100,7 @@ class MysqlUtil(object):
         try:
             self.cursor.executemany(sql, args=params)
             self.conn.commit()
-            print("Saved success. Count={}".format(len(stock_info_list)))
+            print("saved success. count={}".format(len(stock_info_list)))
         except Exception as e:
             print("add_many Err.", e)
             self.conn.rollback()
@@ -124,6 +125,11 @@ class MysqlUtil(object):
         except Exception as e:
             print("query_by_sid Err.", e)
             self.conn.rollback()
+
+    # 析构方法
+    # 当对象被删除时，会自动被调用
+    def __del__(self):
+        self.close()
 
 
 if __name__ == "__main__":
