@@ -12,7 +12,7 @@ shiny-stock
 
 数据库使用MySQL：
 ------------------------------------------------------------------------
-        参考SQL文件：resources/DB.sql
+    参考SQL文件：resources/DB.sql
 
 stock_info      股票日数据记录表
 ------------------------------------------------------------------------
@@ -51,12 +51,12 @@ stock_info      股票日数据记录表
     create_date     创建时间
 
 #### 频繁访问出错:
-        \<div class="wrap"><br/>
-            \<div class="error-page"><br/>
-                \<div class="error-page-bg"></div><br/>
-                \<h2>404</h2><br/>
-                \<p>雾霾太大，连页面都看不见了</p><br/>
-                \<a href="/" target="_parent">去首页看看</a><br/>
-            \</div><br/>
-        \</div><br/>
+    <div class="wrap">
+        <div class="error-page">
+            <div class="error-page-bg"></div>
+            <h2>404</h2>
+            <p>雾霾太大，连页面都看不见了</p>
+            <a href="/" target="_parent">去首页看看</a>
+        </div>
+    </div>
 
