@@ -31,7 +31,8 @@ class MysqlUtil(object):
     # 关闭连接
     def close(self):
         self.cursor.close()
-        self.conn.close()
+        if self.conn is not None:
+            self.conn.close()
         print("MySQL close success.")
 
     # 新增一条记录
