@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import time
-import mysql_util
+from util import mysql_util
 import json
 import os
 from multiprocessing.dummy import Pool
