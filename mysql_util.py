@@ -23,17 +23,25 @@ class MysqlUtil(object):
                 charset=config.db_charset
             )
             self.conn = conn
-            self.cursor = conn.cursor()
             print("MySQL connect success.")
         except Exception as e:
             print("MySQL connect Err.", e)
 
     # 关闭连接
     def close(self):
-        self.cursor.close()
-        if self.conn is not None:
+        try:
             self.conn.close()
-        print("MySQL close success.")
+            print("MySQL close success.")
+        except Exception as e:
+            print("MySQL close Err.", e)
+
+    # 获取游标
+    def get_cur(self):
+        return self.conn.cursor()
+
+    # 关闭游标
+    def close_cur(self):
+        self.get_cur().close()
 
     # 新增一条记录
     def add(self, stock_info):
@@ -62,11 +70,13 @@ class MysqlUtil(object):
                  stock_info['market_equity'], stock_info['total_equity'],
                  stock_info['industry_part'], stock_info['attention_rate'])
         try:
-            self.cursor.execute(sql)
+            self.get_cur().execute(sql)
             self.conn.commit()
         except Exception as e:
             print("add Err.", e)
             self.conn.rollback()
+        finally:
+            self.close_cur()
 
     # 新增多条记录
     def add_many(self, stock_info_list):
@@ -99,40 +109,50 @@ class MysqlUtil(object):
                           stock_info['market_equity'], stock_info['total_equity'],
                           stock_info['industry_part'], stock_info['attention_rate']))
         try:
-            self.cursor.executemany(sql, args=params)
+            self.get_cur().executemany(sql, args=params)
             self.conn.commit()
             print("saved success. count={}".format(len(stock_info_list)))
         except Exception as e:
             print("add_many Err.", e)
             self.conn.rollback()
+        finally:
+            self.close_cur()
 
     # 根据主键删除一条记录
     def remove(self, sid):
         sql = "delete from stock_info where id='%d'" % sid
         try:
-            self.cursor.execute(sql)
+            self.get_cur().execute(sql)
             self.conn.commit()
         except Exception as e:
             print("remove Err.", e)
             self.conn.rollback()
+        finally:
+            self.close_cur()
 
     # 根据主键查询一条记录
     def query_by_sid(self, sid):
         sql = "select * from stock_info where id=%d" % sid
         try:
-            self.cursor.execute(sql)
-            res = self.cursor.fetchone()
+            cursor = self.get_cur()
+            cursor.execute(sql)
+            res = cursor.fetchone()
             return res
         except Exception as e:
             print("query_by_sid Err.", e)
             self.conn.rollback()
+        finally:
+            self.close_cur()
 
+    '''使用谁调用谁关闭的原则
     # 析构方法
     # 当对象被删除时，会自动被调用
     def __del__(self):
         self.close()
+    '''
 
 
 if __name__ == "__main__":
     MysqlUtil = MysqlUtil()
     print(MysqlUtil.query_by_sid(1))
+    MysqlUtil.close()
