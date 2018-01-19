@@ -18,9 +18,18 @@ def read_property(section, key):
 
 
 # 保存在变量中
+# [db]
 db_host = str(read_property("db", "db_host"))
 db_port = int(read_property("db", "db_port"))
 db_user = str(read_property("db", "db_user"))
 db_pass = str(read_property("db", "db_pass"))
 db_name = str(read_property("db", "db_name"))
 db_charset = str(read_property("db", "db_charset"))
+
+# [mongo]
+mogo_host = str(read_property("mongo", "mogo_host"))
+mogo_port = int(read_property("mongo", "mogo_port"))
+mogo_user = str(read_property("mongo", "mogo_user"))
+mogo_pass = str(read_property("mongo", "mogo_pass"))
+mogo_auth = str(read_property("mongo", "mogo_auth"))
+mogo_db = str(read_property("mongo", "mogo_db"))
