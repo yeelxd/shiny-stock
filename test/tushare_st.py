@@ -6,12 +6,12 @@ from config import config
 
 
 # 大单交易数据
+# 默认400手
 def big_order():
-    # 默认400手
     today = time.strftime("%Y-%m-%d", time.localtime())
     df_600118 = ts.get_sina_dd('600118', date=today)
     print(df_600118)
-    df_600651 = ts.get_sina_dd('600651', date=today)
+    df_600651 = ts.get_sina_dd('600651', date=today, vol=1000)
     print(df_600651)
 
     # 存储到MongoDB中
@@ -23,20 +23,55 @@ def big_order():
     # 首先删除今日的数据
     filter_param = {"trade_date": today}
     delete_result = db["big_order"].delete_many(filter_param)
-    print("删除今日数据，Result=", delete_result.raw_result)
+    print("删除今日统计数据，Result=", delete_result.raw_result)
+    delete_stat_result = db["big_order_stat"].delete_many(filter_param)
+    print("删除今日汇总数据，Result=", delete_stat_result.raw_result)
     # 600118
-    json_list_600118 = json.loads(df_600118.to_json(orient='records'))
-    for json_600118 in json_list_600118:
-        json_600118.update({'trade_date': today})
-    result_600118 = db["big_order"].insert_many(json_list_600118)
-    for ids in result_600118.inserted_ids:
-        print(ids)
+    if df_600118 is not None:
+        json_list_600118 = json.loads(df_600118.to_json(orient='records'))
+        for json_600118 in json_list_600118:
+            json_600118.update({'trade_date': today})
+        result_600118 = db["big_order"].insert_many(json_list_600118)
+        print("{600118}插入记录数=", len(result_600118.inserted_ids))
+        # 统计当天的大单净量并插入到Mongo中
+        net_json_600118 = big_order_stat_func(json_list_600118)
+        net_result_600118 = db["big_order_stat"].insert_one(net_json_600118)
+        print("{600118}插入大单净量结果=", net_result_600118.inserted_id)
     # 600651
-    json_list_600651 = json.loads(df_600651.to_json(orient='records'))
-    for json_600651 in json_list_600651:
-        json_600651.update({'trade_date': today})
-    result_600651 = db["big_order"].insert_many(json_list_600651)
-    print(result_600651)
+    if df_600651 is not None:
+        json_list_600651 = json.loads(df_600651.to_json(orient='records'))
+        for json_600651 in json_list_600651:
+            json_600651.update({'trade_date': today})
+        result_600651 = db["big_order"].insert_many(json_list_600651)
+        print("{600118}插入记录数=", len(result_600651.inserted_ids))
+        # 统计当天的大单净量并插入到Mongo中
+        net_json_600651 = big_order_stat_func(json_list_600651)
+        net_result_600651 = db["big_order_stat"].insert_one(net_json_600651)
+        print("{600651}插入大单净量结果=", net_result_600651.inserted_id)
+
+
+# 统计当天的大单净量
+def big_order_stat_func(df_json_list):
+    net_stat = 0
+    for df_json in df_json_list:
+        # 买卖类型【买盘、卖盘、中性盘】
+        trade_type = df_json['type']
+        trade_volume = int(df_json['volume'])
+        if trade_type == "中性盘":
+            continue
+        if trade_type == "卖盘":
+            trade_volume = trade_volume * (-1)
+        net_stat += trade_volume
+    # 更新列表信息
+    big_order_stat = {"trade_date": df_json_list[0]['trade_date']}
+    big_order_stat.update({"code": df_json_list[0]['code']})
+    big_order_stat.update({"name": df_json_list[0]['name']})
+    net_type = "买入"
+    if net_stat < 0:
+        net_type = "卖出"
+    big_order_stat.update({"net_type": net_type})
+    big_order_stat.update({"net_volume": net_stat})
+    return big_order_stat
 
 
 # 根据20MA平均线，评估买卖
