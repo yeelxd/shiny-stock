@@ -29,3 +29,9 @@ class MongoUtil(object):
 
     def get_one(self, collection, object_id):
         self.db[collection].find_one(object_id)
+
+    def del_one(self, collection, object_id):
+        self.db[collection].delete_one({"_id": object_id})
+
+    def del_many(self, collection, filter_param):
+        self.db[collection].delete_many(filter_param)
