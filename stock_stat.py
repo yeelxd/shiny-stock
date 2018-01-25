@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # Python 3.6.3
+# 保存在MySQL数据库中
 
 import requests
 from bs4 import BeautifulSoup
@@ -43,7 +44,7 @@ def get_stock_list(stock_list_url, stock_info_url):
     for a in all_a:
         try:
             href = a.attrs['href']
-            stock_code = re.findall(r"[s][hz][60][0][012]\d{3}", href)
+            stock_code = re.findall(r"[s][hz][60][0][0123]\d{3}", href)
             if len(stock_code) > 0:
                 stock_url = stock_info_url + stock_code[0] + ".html"
                 # 谨防重复处理

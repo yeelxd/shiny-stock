@@ -21,6 +21,13 @@ class MongoUtil(object):
         except Exception as e:
             print("Mongo connect Err.", e)
 
+    def close(self):
+        try:
+            self.client.close()
+            self.client = None
+        except Exception as e:
+            print("Mongo close Err.", e)
+
     def add_one(self, collection, data_json):
         self.db[collection].insert_one(data_json)
 
@@ -35,3 +42,8 @@ class MongoUtil(object):
 
     def del_many(self, collection, filter_param):
         self.db[collection].delete_many(filter_param)
+
+
+if __name__ == "__main__":
+    MongoUtil = MongoUtil()
+    print(MongoUtil.get_one(1))
