@@ -119,8 +119,20 @@ class MysqlUtil(object):
             self.close_cur()
 
     # 根据主键删除一条记录
-    def remove(self, sid):
+    def remove_by_id(self, sid):
         sql = "delete from stock_info where id='%d'" % sid
+        try:
+            self.get_cur().execute(sql)
+            self.conn.commit()
+        except Exception as e:
+            print("remove Err.", e)
+            self.conn.rollback()
+        finally:
+            self.close_cur()
+
+    # 根据交易日期删除记录
+    def remove_by_trade_date(self, trade_date):
+        sql = "delete from stock_info where trade_date='%s'" % trade_date
         try:
             self.get_cur().execute(sql)
             self.conn.commit()
