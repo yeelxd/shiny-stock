@@ -73,7 +73,7 @@ class CrawlerMZ(object):
 
 
 if __name__ == "__main__":
-    CrawlerMZ = CrawlerMZ()
+    crawler_mz = CrawlerMZ()
     # 循环73页 下载每一页的图片链接
     more_cnt = 1
     while more_cnt <= 73:
@@ -81,7 +81,7 @@ if __name__ == "__main__":
             base_page_url = "http://www.meizitu.com/a/more_"
             base_page_url += str(more_cnt) + ".html"
             more_cnt += 1
-            CrawlerMZ.load_index(base_page_url)
+            crawler_mz.load_index(base_page_url)
         except IOError:
             print("Oops! IOError.line 77s.Arise.")
             continue

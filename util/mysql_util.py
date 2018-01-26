@@ -165,6 +165,6 @@ class MysqlUtil(object):
 
 
 if __name__ == "__main__":
-    MysqlUtil = MysqlUtil()
-    print(MysqlUtil.query_by_sid(1))
-    MysqlUtil.close()
+    mysql_util = MysqlUtil()
+    print(mysql_util.query_by_sid(1))
+    mysql_util.close()

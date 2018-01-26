@@ -45,5 +45,5 @@ class MongoUtil(object):
 
 
 if __name__ == "__main__":
-    MongoUtil = MongoUtil()
-    print(MongoUtil.get_one(1))
+    mongo_util = MongoUtil()
+    print(mongo_util.get_one(1))

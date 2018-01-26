@@ -1,3 +1,6 @@
+# Crawler Test For tushare api
+# Dependency tushare Modules
+# Python 3.6.3
 import time
 import json
 import tushare as ts
@@ -75,54 +78,8 @@ class TushareST(object):
         big_order_stat.update({"net_volume": net_stat})
         return big_order_stat
 
-    # 根据20MA平均线，评估买卖
-    # 即设定一个策略：以20日线为标准，当前股价低于20日线的时候就卖出，高于20日线的时候就买入。
-    @staticmethod
-    def buy_sell(stock_code):
-        is_buy = 0
-        buy_val = []
-        buy_date = []
-        sell_val = []
-        sell_date = []
-        df = ts.get_hist_data(stock_code)
-        # 20日平均价
-        ma20 = df[u'ma20']
-        # 当日的收盘价
-        close = df[u'close']
-        rate = 1.0
-        # 数据量Index
-        idx = len(ma20)
-
-        while idx > 0:
-            idx -= 1
-            close_val = close[idx]
-            ma20_val = ma20[idx]
-            if close_val > ma20_val:
-                if is_buy == 0:
-                    is_buy = 1
-                    buy_val.append(close_val)
-                    buy_date.append(close.keys()[idx])
-            elif close_val < ma20_val:
-                if is_buy == 1:
-                    is_buy = 0
-                    sell_val.append(close_val)
-                    sell_date.append(close.keys()[idx])
-        print("stock number : %s" % stock_code)
-        print("buy count    : %d" % len(buy_val))
-        print("sell count   : %d" % len(sell_val))
-
-        for i in range(len(sell_val)):
-            rate = rate * (sell_val[i] * (1 - 0.002) / buy_val[i])
-            print("buy date : %s, buy price : %.2f" % (buy_date[i], buy_val[i]))
-            print("sell date: %s, sell price: %.2f" % (sell_date[i], sell_val[i]))
-        print("The final rate of return: %.2f" % rate)
-
 
 if __name__ == "__main__":
-    TushareST = TushareST()
+    tushare_st = TushareST()
     # 大单交易
-    TushareST.big_order()
-    # 中国卫星
-    # buy_sell('600118')
-    # 飞乐音响
-    # buy_sell('600651')
+    # tushare_st.big_order()

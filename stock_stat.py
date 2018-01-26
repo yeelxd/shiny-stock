@@ -203,5 +203,5 @@ class StockStat(object):
 
 if __name__ == "__main__":
     # Call Running Center
-    StockStat = StockStat()
-    StockStat.main_center()
+    stock_stat = StockStat()
+    stock_stat.main_center()

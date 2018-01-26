@@ -4,6 +4,7 @@
 # 保存在MongoDB中
 import tushare as ts
 from util import mongo_util
+from util import tushare_util as ts_util
 import time
 import re
 import json
@@ -38,6 +39,7 @@ class StockFilter(object):
     @staticmethod
     def filter_stock_list(stock_data_list, today):
         new_stock_data_list = []
+        tushare_util = ts_util.TushareUtil()
         for stock_code in stock_data_list.keys():
             try:
                 # 过滤只取主板的股票
@@ -65,11 +67,17 @@ class StockFilter(object):
                 roe = esp * 100 / bvps
                 if roe < 15:
                     continue
+                # 根据20MA买卖指标
+                # 若低于1过滤之
+                rate_20ma = tushare_util.buy_sell(stock_code, False)
+                if rate_20ma < 100:
+                    continue
                 # 更新ROE数据
                 stock_data = {}
                 stock_data.update({'code': stock_code})
                 stock_data.update(stock_info)
                 stock_data.update({'roe': str(round(roe, 2))+"%"})
+                stock_data.update({'rate_20ma': str(rate_20ma)+"%"})
                 stock_data.update({'createDate': today})
                 new_stock_data_list.append(stock_data)
             except Exception as e:
@@ -105,5 +113,5 @@ class StockFilter(object):
 
 if __name__ == "__main__":
     # Call Running Center
-    StockFilter = StockFilter()
-    StockFilter.main_center()
+    stock_filter = StockFilter()
+    stock_filter.main_center()
