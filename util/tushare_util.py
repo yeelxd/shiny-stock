@@ -3,6 +3,8 @@
 # Python 3.6.3
 
 import tushare as ts
+import json
+from util import mongo_util
 
 
 class TushareUtil(object):
@@ -53,6 +55,103 @@ class TushareUtil(object):
         print("The [%s] final rate of return: %d%%" % (stock_code, rate))
         return rate
 
+    # 获取近五年股票的业绩报告（主表）情况
+    # 保存到MongolianDB中
+    """
+    code,代码
+    name,名称
+    esp,每股收益
+    eps_yoy,每股收益同比(%)
+    bvps,每股净资产
+    roe,净资产收益率(%)
+    epcf,每股现金流量(元)
+    net_profits,净利润(万元)
+    profits_yoy,净利润同比(%)
+    distrib,分配方案
+    report_date,发布日期
+    """
+    @staticmethod
+    def obtain_5y_report():
+        stat_years = [2012, 2013, 2014, 2015, 2016, 2017]
+        report_data = []
+        for stat_year in stat_years:
+            for q in range(1, 5):
+                df = ts.get_report_data(stat_year, q)
+                if df is not None:
+                    json_dfs = json.loads(df.to_json(orient='records'))
+                    for json_df in json_dfs:
+                        new_data = {"period": str(stat_year) + "Q" + str(q)}
+                        new_data.update(json_df)
+                        report_data.append(new_data)
+        # MongoDB
+        mongo_util_instance = mongo_util.MongoUtil()
+        mongo_util_instance.add_many(collection='stock_report', data_json_list=report_data)
+        mongo_util_instance.close()
+        print("获取近五年业绩报告（主表）数据成功. count=[{}]".format(len(report_data)))
+
+    # 获取近五年股票的盈利能力情况
+    # 保存到MongolianDB中
+    """
+    code,代码
+    name,名称
+    roe,净资产收益率(%)
+    net_profit_ratio,净利率(%)
+    gross_profit_rate,毛利率(%)
+    net_profits,净利润(万元)
+    esp,每股收益
+    business_income,营业收入(百万元)
+    bips,每股主营业务收入(元)
+    """
+    @staticmethod
+    def obtain_5y_profit():
+        stat_years = [2012, 2013, 2014, 2015, 2016, 2017]
+        profit_data = []
+        for stat_year in stat_years:
+            for q in range(1, 5):
+                df = ts.get_profit_data(stat_year, q)
+                if df is not None:
+                    json_dfs = json.loads(df.to_json(orient='records'))
+                    for json_df in json_dfs:
+                        new_data = {"period": str(stat_year)+"Q"+str(q)}
+                        new_data.update(json_df)
+                        profit_data.append(new_data)
+        # MongoDB
+        mongo_util_instance = mongo_util.MongoUtil()
+        mongo_util_instance.add_many(collection='stock_profit', data_json_list=profit_data)
+        mongo_util_instance.close()
+        print("获取近五年的盈利能力数据成功. count=[{}]".format(len(profit_data)))
+
+    # 获取近五年股票的盈利能力情况
+    # 保存到MongolianDB中
+    """
+    code,代码
+    name,名称
+    mbrg,主营业务收入增长率(%)
+    nprg,净利润增长率(%)
+    nav,净资产增长率
+    targ,总资产增长率
+    epsg,每股收益增长率
+    seg,股东权益增长率
+    """
+    @staticmethod
+    def obtain_5y_growth():
+        stat_years = [2012, 2013, 2014, 2015, 2016, 2017]
+        growth_data = []
+        for stat_year in stat_years:
+            for q in range(1, 5):
+                df = ts.get_growth_data(stat_year, q)
+                if df is not None:
+                    json_dfs = json.loads(df.to_json(orient='records'))
+                    for json_df in json_dfs:
+                        new_data = {"period": str(stat_year) + "Q" + str(q)}
+                        new_data.update(json_df)
+                        growth_data.append(new_data)
+        # MongoDB
+        mongo_util_instance = mongo_util.MongoUtil()
+        mongo_util_instance.add_many(collection='stock_growth', data_json_list=growth_data)
+        mongo_util_instance.close()
+        print("获取近五年成长能力数据成功. count=[{}]".format(len(growth_data)))
+
 
 if __name__ == "__main__":
     tushare_util = TushareUtil()
@@ -60,4 +159,9 @@ if __name__ == "__main__":
     # tushare_util.buy_sell('600118', True)
     # 飞乐音响
     # tushare_util.buy_sell('600651', True)
-    tushare_util.buy_sell('600118', False)
+    # 获取近五年的业绩报告（主表）数据
+    tushare_util.obtain_5y_report()
+    # 获取近五年的盈利能力的数据
+    tushare_util.obtain_5y_profit()
+    # 获取近五年成长能力数据
+    tushare_util.obtain_5y_growth()
