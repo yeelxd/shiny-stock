@@ -25,6 +25,7 @@ class MongoUtil(object):
         try:
             self.client.close()
             self.client = None
+            print("Mongo close success.")
         except Exception as e:
             print("Mongo close Err.", e)
 
