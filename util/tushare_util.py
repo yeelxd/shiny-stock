@@ -137,7 +137,7 @@ class TushareUtil(object):
         mongo_util_instance.close()
         print("获取近五年的盈利能力数据成功. count=[{}]".format(len(profit_data)))
 
-    # 获取近五年股票的盈利能力情况
+    # 获取近五年股票的成长能力情况
     # 保存到MongolianDB中
     """
     code,代码
@@ -176,6 +176,47 @@ class TushareUtil(object):
         mongo_util_instance.close()
         print("获取近五年成长能力数据成功. count=[{}]".format(len(growth_data)))
 
+    # 基金持股
+    # 获取每个季度基金持有上市公司股票的数据
+    # 保存到MongolianDB中
+    """
+    code：股票代码
+    name：股票名称
+    date:报告日期
+    nums:基金家数
+    nlast:与上期相比（增加或减少了）
+    count:基金持股数（万股）
+    clast:与上期相比
+    amount:基金持股市值
+    ratio:占流通盘比率
+    """
+    @staticmethod
+    def obtain_5y_fund():
+        judge_repeat = []
+        stat_years = [2012, 2013, 2014, 2015, 2016, 2017]
+        fund_data = []
+        for stat_year in stat_years:
+            for q in range(1, 5):
+                df = ts.fund_holdings(stat_year, q)
+                if df is not None:
+                    json_dfs = json.loads(df.to_json(orient='records'))
+                    for json_df in json_dfs:
+                        period = str(stat_year) + "Q" + str(q)
+                        code = str(json_df['code'])
+                        # 判重
+                        if judge_repeat.count(period + code) > 0:
+                            continue
+                        new_data = {"period": period}
+                        new_data.update(json_df)
+                        fund_data.append(new_data)
+                        # 添加到重复判断的列表
+                        judge_repeat.append(period + code)
+        # MongoDB
+        mongo_util_instance = mongo_util.MongoUtil()
+        mongo_util_instance.add_many(collection='stock_fund', data_json_list=fund_data)
+        mongo_util_instance.close()
+        print("获取近五年基金持股数据成功. count=[{}]".format(len(fund_data)))
+
 
 if __name__ == "__main__":
     tushare_util = TushareUtil()
@@ -189,3 +230,5 @@ if __name__ == "__main__":
     tushare_util.obtain_5y_profit()
     # 获取近五年成长能力数据
     tushare_util.obtain_5y_growth()
+    # 获取近五年基金持股数据
+    tushare_util.obtain_5y_fund()
