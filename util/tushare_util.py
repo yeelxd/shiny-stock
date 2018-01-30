@@ -72,6 +72,7 @@ class TushareUtil(object):
     """
     @staticmethod
     def obtain_5y_report():
+        judge_repeat = []
         stat_years = [2012, 2013, 2014, 2015, 2016, 2017]
         report_data = []
         for stat_year in stat_years:
@@ -80,9 +81,16 @@ class TushareUtil(object):
                 if df is not None:
                     json_dfs = json.loads(df.to_json(orient='records'))
                     for json_df in json_dfs:
-                        new_data = {"period": str(stat_year) + "Q" + str(q)}
+                        period = str(stat_year) + "Q" + str(q)
+                        code = str(json_df['code'])
+                        # 判重
+                        if judge_repeat.count(period+code) > 0:
+                            continue
+                        new_data = {"period": period}
                         new_data.update(json_df)
                         report_data.append(new_data)
+                        # 添加到重复判断的列表
+                        judge_repeat.append(period+code)
         # MongoDB
         mongo_util_instance = mongo_util.MongoUtil()
         mongo_util_instance.add_many(collection='stock_report', data_json_list=report_data)
@@ -104,6 +112,7 @@ class TushareUtil(object):
     """
     @staticmethod
     def obtain_5y_profit():
+        judge_repeat = []
         stat_years = [2012, 2013, 2014, 2015, 2016, 2017]
         profit_data = []
         for stat_year in stat_years:
@@ -112,9 +121,16 @@ class TushareUtil(object):
                 if df is not None:
                     json_dfs = json.loads(df.to_json(orient='records'))
                     for json_df in json_dfs:
-                        new_data = {"period": str(stat_year)+"Q"+str(q)}
+                        period = str(stat_year) + "Q" + str(q)
+                        code = str(json_df['code'])
+                        # 判重
+                        if judge_repeat.count(period + code) > 0:
+                            continue
+                        new_data = {"period": period}
                         new_data.update(json_df)
                         profit_data.append(new_data)
+                        # 添加到重复判断的列表
+                        judge_repeat.append(period + code)
         # MongoDB
         mongo_util_instance = mongo_util.MongoUtil()
         mongo_util_instance.add_many(collection='stock_profit', data_json_list=profit_data)
@@ -135,6 +151,7 @@ class TushareUtil(object):
     """
     @staticmethod
     def obtain_5y_growth():
+        judge_repeat = []
         stat_years = [2012, 2013, 2014, 2015, 2016, 2017]
         growth_data = []
         for stat_year in stat_years:
@@ -143,9 +160,16 @@ class TushareUtil(object):
                 if df is not None:
                     json_dfs = json.loads(df.to_json(orient='records'))
                     for json_df in json_dfs:
-                        new_data = {"period": str(stat_year) + "Q" + str(q)}
+                        period = str(stat_year) + "Q" + str(q)
+                        code = str(json_df['code'])
+                        # 判重
+                        if judge_repeat.count(period + code) > 0:
+                            continue
+                        new_data = {"period": period}
                         new_data.update(json_df)
                         growth_data.append(new_data)
+                        # 添加到重复判断的列表
+                        judge_repeat.append(period + code)
         # MongoDB
         mongo_util_instance = mongo_util.MongoUtil()
         mongo_util_instance.add_many(collection='stock_growth', data_json_list=growth_data)
