@@ -51,7 +51,8 @@ class TushareUtil(object):
             if is_print:
                 print("buy date : %s, buy price : %.2f" % (buy_date[i], buy_val[i]))
                 print("sell date: %s, sell price: %.2f" % (sell_date[i], sell_val[i]))
-        rate = round(rate, 2) * 100
+        # 四舍五入到个位
+        rate = round(rate * 100)
         print("The [%s] final rate of return: %d%%" % (stock_code, rate))
         return rate
 
