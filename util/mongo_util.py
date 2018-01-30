@@ -4,6 +4,7 @@
 
 from config import config
 from pymongo import MongoClient
+from bson.objectid import ObjectId
 
 
 class MongoUtil(object):
@@ -21,6 +22,7 @@ class MongoUtil(object):
         except Exception as e:
             print("Mongo connect Err.", e)
 
+    # 关闭连接
     def close(self):
         try:
             self.client.close()
@@ -36,7 +38,7 @@ class MongoUtil(object):
         self.db[collection].insert_many(data_json_list)
 
     def get_one(self, collection, object_id):
-        self.db[collection].find_one(object_id)
+        return self.db[collection].find_one({"_id": object_id})
 
     def del_one(self, collection, object_id):
         self.db[collection].delete_one({"_id": object_id})
@@ -47,4 +49,6 @@ class MongoUtil(object):
 
 if __name__ == "__main__":
     mongo_util = MongoUtil()
-    print(mongo_util.get_one(1))
+    oid = ObjectId("5a66e3aa4cd9d91938e2a580")
+    print(mongo_util.get_one(collection="big_order_stat", object_id=oid))
+    mongo_util.close()
