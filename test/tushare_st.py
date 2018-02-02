@@ -4,55 +4,41 @@
 import time
 import json
 import tushare as ts
-from pymongo import MongoClient
-from config import config
+from util import mongo_util
 
 
 class TushareST(object):
 
     # 大单交易数据
     # 默认400手
-    def big_order(self):
-        today = time.strftime("%Y-%m-%d", time.localtime())
-        df_600118 = ts.get_sina_dd('600118', date=today)
-        print(df_600118)
-        df_600651 = ts.get_sina_dd('600651', date=today, vol=1000)
-        print(df_600651)
-
-        # 存储到MongoDB中
-        # uri = "mongodb://user:password@example.com/the_database?authMechanism=MONGODB-CR"
-        mongo_client = MongoClient(host=config.mogo_host, port=config.mogo_port,
-                                   username=config.mogo_user, password=config.mogo_pass,
-                                   authMechanism=config.mogo_auth)
-        db = mongo_client[config.mogo_db]
+    def big_order(self, stock_code_list):
+        # MongoDB
+        mongo_util_instance = mongo_util.MongoUtil()
         # 首先删除今日的数据
+        today = time.strftime("%Y-%m-%d", time.localtime())
         filter_param = {"trade_date": today}
-        delete_result = db["big_order"].delete_many(filter_param)
-        print("删除今日统计数据，Result=", delete_result.raw_result)
-        delete_stat_result = db["big_order_stat"].delete_many(filter_param)
-        print("删除今日汇总数据，Result=", delete_stat_result.raw_result)
-        # 600118
-        if df_600118 is not None:
-            json_list_600118 = json.loads(df_600118.to_json(orient='records'))
-            for json_600118 in json_list_600118:
-                json_600118.update({'trade_date': today})
-            result_600118 = db["big_order"].insert_many(json_list_600118)
-            print("{600118}插入记录数=", len(result_600118.inserted_ids))
-            # 统计当天的大单净量并插入到Mongo中
-            net_json_600118 = self.big_order_stat_func(json_list_600118)
-            net_result_600118 = db["big_order_stat"].insert_one(net_json_600118)
-            print("{600118}插入大单净量结果=", net_result_600118.inserted_id)
-        # 600651
-        if df_600651 is not None:
-            json_list_600651 = json.loads(df_600651.to_json(orient='records'))
-            for json_600651 in json_list_600651:
-                json_600651.update({'trade_date': today})
-            result_600651 = db["big_order"].insert_many(json_list_600651)
-            print("{600118}插入记录数=", len(result_600651.inserted_ids))
-            # 统计当天的大单净量并插入到Mongo中
-            net_json_600651 = self.big_order_stat_func(json_list_600651)
-            net_result_600651 = db["big_order_stat"].insert_one(net_json_600651)
-            print("{600651}插入大单净量结果=", net_result_600651.inserted_id)
+        mongo_util_instance.del_many(collection='big_order', filter_param=filter_param)
+        mongo_util_instance.del_many(collection='big_order_stat', filter_param=filter_param)
+        print("删除今日大单统计数据成功")
+        # 循环处理股票列表
+        for stock_code in stock_code_list:
+            try:
+                df = ts.get_sina_dd(stock_code, date=today)
+                print(df)
+                if df is not None:
+                    json_list = json.loads(df.to_json(orient='records'))
+                    for json_data in json_list:
+                        json_data.update({'trade_date': today})
+                    # 保存到MongoDB
+                    mongo_util_instance.add_many(collection='big_order', data_json_list=json_list)
+                    # 统计当天的大单净量并插入到Mongo中
+                    net_json = self.big_order_stat_func(json_list)
+                    mongo_util_instance.add_one(collection='big_order_stat', data_json=net_json)
+            except Exception as e:
+                print("大单数据统计异常", e)
+        print("新增今日大单统计数据成功")
+        # 关闭Mongo连接
+        mongo_util_instance.close()
 
     # 统计当天的大单净量
     @staticmethod
@@ -81,5 +67,6 @@ class TushareST(object):
 
 if __name__ == "__main__":
     tushare_st = TushareST()
-    # 大单交易
-    # tushare_st.big_order()
+    # 大单交易 600118 600651
+    stock_code_post = ["600118", "600651", "600038"]
+    tushare_st.big_order(stock_code_post)
