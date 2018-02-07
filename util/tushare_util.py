@@ -5,6 +5,8 @@
 import tushare as ts
 import json
 from util import mongo_util
+import time
+import datetime
 
 
 class TushareUtil(object):
@@ -218,6 +220,33 @@ class TushareUtil(object):
         mongo_util_instance.close()
         print("获取近五年基金持股数据成功. count=[{}]".format(len(fund_data)))
 
+    # 沪深300的成分股及其权重
+    # 日期转换https://www.epochconverter.com/
+    # 默认`epoch` = epoch milliseconds - 毫秒数
+    """
+    code :股票代码
+    name :股票名称
+    date :日期
+    weight:权重
+    """
+    @staticmethod
+    def obtain_hs300_weight():
+        df = ts.get_hs300s()
+        if df is not None:
+            json_dfs = json.loads(df.to_json(orient='records'))
+            # 对筛选结果根据weight排序--降序
+            json_dfs.sort(key=lambda obj: obj.get('weight'), reverse=True)
+            for json_df in json_dfs:
+                # 转换日期
+                date_stamp = json_df['date'] / 1000
+                date_str = time.strftime("%Y-%m-%d", time.localtime(date_stamp))
+                json_df['date'] = date_str
+            # MongoDB
+            mongo_util_instance = mongo_util.MongoUtil()
+            mongo_util_instance.add_many(collection='stock_hs300', data_json_list=json_dfs)
+            mongo_util_instance.close()
+            print("获取沪深300的成分股及其权重. count=[{}]".format(len(json_dfs)))
+
 
 if __name__ == "__main__":
     tushare_util = TushareUtil()
@@ -226,10 +255,12 @@ if __name__ == "__main__":
     # 飞乐音响
     # tushare_util.buy_sell('600651', True)
     # 获取近五年的业绩报告（主表）数据
-    tushare_util.obtain_5y_report()
+    # tushare_util.obtain_5y_report()
     # 获取近五年的盈利能力的数据
-    tushare_util.obtain_5y_profit()
+    # tushare_util.obtain_5y_profit()
     # 获取近五年成长能力数据
-    tushare_util.obtain_5y_growth()
+    # tushare_util.obtain_5y_growth()
     # 获取近五年基金持股数据
-    tushare_util.obtain_5y_fund()
+    # tushare_util.obtain_5y_fund()
+    # 获取沪深300的成分股及其权重
+    tushare_util.obtain_hs300_weight()
