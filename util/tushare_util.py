@@ -6,7 +6,6 @@ import tushare as ts
 import json
 from util import mongo_util
 import time
-import datetime
 
 
 class TushareUtil(object):
