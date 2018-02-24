@@ -4,7 +4,7 @@
 from datetime import timedelta, date
 
 
-class OsUtil(object):
+class CommonUtil(object):
 
     # 获取当前日期的前后N天的日期(return date format)
     @staticmethod

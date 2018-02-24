@@ -5,7 +5,7 @@
 import tushare as ts
 import json
 from util import mongo_util
-from util.os_util import OsUtil
+from util.common_util import CommonUtil
 import time
 
 
@@ -322,7 +322,7 @@ class TushareUtil(object):
                 net_list = []
                 for i in range(1, 91):
                     try:
-                        p_date = OsUtil.get_day_of_day(-i)
+                        p_date = CommonUtil.get_day_of_day(-i)
                         trade_date = p_date.strftime("%Y-%m-%d")
                         df = ts.get_tick_data(code=code, date=trade_date)
                         if df is not None:
