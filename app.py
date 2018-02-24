@@ -26,7 +26,10 @@ tushare_st_instance = tushare_util.TushareUtil()
 # hist_trade_stock_list = [stock_600118, stock_600651]
 # tushare_st_instance.history_trade_stat(stock_info_list=hist_trade_stock_list)
 # 获取当前交易所有股票的行情数据
-tushare_st_instance.obtain_today_all()
+# tushare_st_instance.obtain_today_all()
+# 获取实时分笔交易数据
+stock_code_list = ['600118', '600651', '603160', '600835', '601318']
+tushare_st_instance.obtain_realtime(stock_code_list)
 # 大单交易明细与统计 600118 600651
 big_order_stock_code = ["600118", "600651"]
 tushare_st_instance.big_order(big_order_stock_code)

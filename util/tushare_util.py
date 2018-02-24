@@ -399,6 +399,40 @@ class TushareUtil(object):
             # 最后关闭Mongo的连接
             mongo_util_instance.close()
 
+    # 获取实时分笔数据，可以实时取得股票当前报价和成交信息
+    """
+    symbols：6位数字股票代码，
+    或者指数代码（sh=上证指数 sz=深圳成指 hs300=沪深300指数 sz50=上证50 zxb=中小板 cyb=创业板）
+    可输入的类型：str、list、set或者pandas的Series对象
+    """
+    @staticmethod
+    def obtain_realtime(stock_code_list):
+        # MongoDB
+        mongo_util_instance = mongo_util.MongoUtil()
+        try:
+            # 首先删除今日的数据
+            today = time.strftime("%Y-%m-%d", time.localtime())
+            filter_param = {"trade_date": today}
+            mongo_util_instance.del_many(collection='stock_realtime', filter_param=filter_param)
+            print("删除实时行情交易数据成功")
+            df = ts.get_realtime_quotes(stock_code_list)
+            if df is not None:
+                new_df = df[['code', 'name', 'open', 'pre_close', 'price', 'low', 'high', 'volume', 'amount', 'time']]
+                json_list = json.loads(new_df.to_json(orient='records'))
+                new_json_list = []
+                for json_data in json_list:
+                    new_json_data = {'trade_date': today}
+                    new_json_data.update(json_data)
+                    new_json_list.append(new_json_data)
+                # 今日所有交易行情数据存入Mongo
+                mongo_util_instance.add_many(collection='stock_realtime', data_json_list=new_json_list)
+                print("获取实时行情交易数据成功, len={}".format(len(new_json_list)))
+        except Exception as e:
+            print(e)
+        finally:
+            # 最后关闭Mongo的连接
+            mongo_util_instance.close()
+
 
 if __name__ == "__main__":
     tushare_util = TushareUtil()
