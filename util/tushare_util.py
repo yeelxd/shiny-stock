@@ -314,7 +314,7 @@ class TushareUtil(object):
             # 循环处理股票列表
             for stock_info in stock_info_list:
                 # 首先删除该股票的历史统计数据
-                mongo_util_instance.del_many(collection='his_net_order', filter_param=stock_info)
+                mongo_util_instance.del_many(collection='stock_hisorder', filter_param=stock_info)
                 print("删除已存的统计数据成功:", stock_info)
                 # 循环调用历史分笔数据接口
                 code = stock_info['code']
@@ -345,9 +345,54 @@ class TushareUtil(object):
                     net_stat_json = self.trade_net_stat_func(net_list)
                     net_stat_json.update({'trade_date': '0000-00-00'})
                     # 交易净量插入到Mongo中
-                    mongo_util_instance.add_one(collection='his_net_order', data_json=net_stat_json)
-                    mongo_util_instance.add_many(collection='his_net_order', data_json_list=net_list)
+                    mongo_util_instance.add_one(collection='stock_hisorder', data_json=net_stat_json)
+                    mongo_util_instance.add_many(collection='stock_hisorder', data_json_list=net_list)
                 print("历史分笔交易统计成功:", stock_info)
+        except Exception as e:
+            print(e)
+        finally:
+            # 最后关闭Mongo的连接
+            mongo_util_instance.close()
+
+    # 一次性获取当前交易所有股票的行情数据(如果是节假日，即为上一交易日)
+    """
+    code：代码
+    name:名称
+    changepercent:涨跌幅
+    trade:现价
+    open:开盘价
+    high:最高价
+    low:最低价
+    settlement:昨日收盘价
+    volume:成交量
+    turnoverratio:换手率
+    amount:成交量
+    per:市盈率
+    pb:市净率
+    mktcap:总市值
+    nmc:流通市值
+    """
+    @staticmethod
+    def obtain_today_all():
+        # MongoDB
+        mongo_util_instance = mongo_util.MongoUtil()
+        try:
+            # 首先删除今日的数据
+            today = time.strftime("%Y-%m-%d", time.localtime())
+            filter_param = {"trade_date": today}
+            mongo_util_instance.del_many(collection='stock_today', filter_param=filter_param)
+            print("删除今日行情交易数据成功")
+            df = ts.get_today_all()
+            if df is not None:
+                json_list = json.loads(df.to_json(orient='records'))
+                new_json_list = []
+                for json_data in json_list:
+                    new_json_data = {'trade_date': today}
+                    new_json_data.update(json_data)
+                    new_json_list.append(new_json_data)
+                # 今日所有交易行情数据存入Mongo
+                mongo_util_instance.add_many(collection='stock_today', data_json_list=new_json_list)
+                print("\n获取今日行情交易数据成功, len={}".format(len(new_json_list)))
         except Exception as e:
             print(e)
         finally:
