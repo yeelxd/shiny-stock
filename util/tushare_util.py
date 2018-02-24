@@ -5,10 +5,69 @@
 import tushare as ts
 import json
 from util import mongo_util
+from util.os_util import OsUtil
 import time
 
 
 class TushareUtil(object):
+
+    # 大单交易数据
+    # 默认400手
+    def big_order(self, stock_code_list):
+        # MongoDB
+        mongo_util_instance = mongo_util.MongoUtil()
+        # 首先删除今日的数据
+        today = time.strftime("%Y-%m-%d", time.localtime())
+        filter_param = {"trade_date": today}
+        mongo_util_instance.del_many(collection='big_order', filter_param=filter_param)
+        mongo_util_instance.del_many(collection='big_order_stat', filter_param=filter_param)
+        print("删除今日大单统计数据成功")
+        # 循环处理股票列表
+        for stock_code in stock_code_list:
+            try:
+                df = ts.get_sina_dd(stock_code, date=today)
+                print(df)
+                if df is not None:
+                    json_list = json.loads(df.to_json(orient='records'))
+                    new_json_list = []
+                    for json_data in json_list:
+                        new_json_data = {'trade_date': today}
+                        new_json_data.update(json_data)
+                        new_json_list.append(new_json_data)
+                    # 保存到MongoDB
+                    mongo_util_instance.add_many(collection='big_order', data_json_list=new_json_data)
+                    # 统计当天的大单净量并插入到Mongo中
+                    net_json = self.trade_net_stat_func(json_list)
+                    mongo_util_instance.add_one(collection='big_order_stat', data_json=net_json)
+            except Exception as e:
+                print("大单数据统计异常", e)
+        print("新增今日大单统计数据成功")
+        # 关闭Mongo连接
+        mongo_util_instance.close()
+
+    # 统计当天的交易净量
+    @staticmethod
+    def trade_net_stat_func(df_json_list):
+        net_stat = 0
+        for df_json in df_json_list:
+            # 买卖类型【买盘、卖盘、中性盘】
+            trade_type = df_json['type']
+            trade_volume = int(df_json['volume'])
+            if trade_type == "中性盘":
+                continue
+            if trade_type == "卖盘":
+                trade_volume = trade_volume * (-1)
+            net_stat += trade_volume
+        # 更新列表信息
+        big_order_stat = {"trade_date": df_json_list[0]['trade_date']}
+        big_order_stat.update({"code": df_json_list[0]['code']})
+        big_order_stat.update({"name": df_json_list[0]['name']})
+        net_type = "买入"
+        if net_stat < 0:
+            net_type = "卖出"
+        big_order_stat.update({"type": net_type})
+        big_order_stat.update({"volume": net_stat})
+        return big_order_stat
 
     # 根据20MA平均线，评估买卖
     # 即设定一个策略：以20日线为标准，当前股价低于20日线的时候就卖出，高于20日线的时候就买入。
@@ -246,6 +305,55 @@ class TushareUtil(object):
             mongo_util_instance.close()
             print("获取沪深300的成分股及其权重. count=[{}]".format(len(json_dfs)))
 
+    # 统计近三个月的历史分笔交易的数据，大致判断资金的进出情况
+    # stock_info_list : [{'code':'600118', 'name':'中国卫星'}]
+    def history_trade_stat(self, stock_info_list):
+        # MongoDB
+        mongo_util_instance = mongo_util.MongoUtil()
+        try:
+            # 循环处理股票列表
+            for stock_info in stock_info_list:
+                # 首先删除该股票的历史统计数据
+                mongo_util_instance.del_many(collection='his_net_order', filter_param=stock_info)
+                print("删除已存的统计数据成功:", stock_info)
+                # 循环调用历史分笔数据接口
+                code = stock_info['code']
+                # 每天交易净量的集合
+                net_list = []
+                for i in range(1, 91):
+                    try:
+                        p_date = OsUtil.get_day_of_day(-i)
+                        trade_date = p_date.strftime("%Y-%m-%d")
+                        df = ts.get_tick_data(code=code, date=trade_date)
+                        if df is not None:
+                            json_list = json.loads(df.to_json(orient='records'))
+                            # 当天无数据
+                            if json_list[0]['price'] is None:
+                                continue
+                            for json_data in json_list:
+                                json_data.update(stock_info)
+                                json_data.update({'trade_date': trade_date})
+                            # 统计当天的交易净量
+                            net_json = self.trade_net_stat_func(json_list)
+                            net_list.append(net_json)
+                    except Exception as e:
+                        print("获取指定日期的分笔数据Err.", e)
+                    finally:
+                        time.sleep(2)
+                if len(net_list) > 0:
+                    # 汇总所有净量数据
+                    net_stat_json = self.trade_net_stat_func(net_list)
+                    net_stat_json.update({'trade_date': '0000-00-00'})
+                    # 交易净量插入到Mongo中
+                    mongo_util_instance.add_one(collection='his_net_order', data_json=net_stat_json)
+                    mongo_util_instance.add_many(collection='his_net_order', data_json_list=net_list)
+                print("历史分笔交易统计成功:", stock_info)
+        except Exception as e:
+            print(e)
+        finally:
+            # 最后关闭Mongo的连接
+            mongo_util_instance.close()
+
 
 if __name__ == "__main__":
     tushare_util = TushareUtil()
@@ -253,13 +361,3 @@ if __name__ == "__main__":
     # tushare_util.buy_sell('600118', True)
     # 飞乐音响
     # tushare_util.buy_sell('600651', True)
-    # 获取近五年的业绩报告（主表）数据
-    # tushare_util.obtain_5y_report()
-    # 获取近五年的盈利能力的数据
-    # tushare_util.obtain_5y_profit()
-    # 获取近五年成长能力数据
-    # tushare_util.obtain_5y_growth()
-    # 获取近五年基金持股数据
-    # tushare_util.obtain_5y_fund()
-    # 获取沪深300的成分股及其权重
-    tushare_util.obtain_hs300_weight()

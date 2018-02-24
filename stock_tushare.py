@@ -20,7 +20,7 @@ holders,股东人数
 '''
 
 
-class StockFilter(object):
+class StockStat(object):
 
     # 获取默认前一天的沪深股票列表
     @staticmethod
@@ -113,5 +113,5 @@ class StockFilter(object):
 
 if __name__ == "__main__":
     # Call Running Center
-    stock_filter = StockFilter()
-    stock_filter.main_center()
+    stock_stat = StockStat()
+    stock_stat.main_center()
