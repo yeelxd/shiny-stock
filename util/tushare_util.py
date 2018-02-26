@@ -37,7 +37,7 @@ class TushareUtil(object):
                     # 保存到MongoDB
                     mongo_util_instance.add_many(collection='big_order', data_json_list=new_json_list)
                     # 统计当天的大单净量并插入到Mongo中
-                    net_json = self.trade_net_stat_func(json_list)
+                    net_json = self.trade_net_stat_func(new_json_list)
                     mongo_util_instance.add_one(collection='big_order_stat', data_json=net_json)
             except Exception as e:
                 print("大单数据统计异常", e)
