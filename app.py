@@ -23,7 +23,7 @@ tushare_st_instance = tushare_util.TushareUtil()
 # stock_603160 = {'code': '603160', 'name': '汇顶科技'}
 # stock_600835 = {'code': '600835', 'name': '上海机电'}
 # stock_601318 = {'code': '601318', 'name': '中国平安'}
-# hist_trade_stock_list = [stock_600118, stock_600651]
+# hist_trade_stock_list = [stock_600118, stock_600651, stock_603160, stock_600835, stock_601318]
 # tushare_st_instance.history_trade_stat(stock_info_list=hist_trade_stock_list)
 # 获取当前交易所有股票的行情数据
 # tushare_st_instance.obtain_today_all()
